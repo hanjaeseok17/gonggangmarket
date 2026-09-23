@@ -6,7 +6,6 @@
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
   html{color-scheme:light dark;}
-  img{max-width:100%;}
 </style>
 <title>공강마켓 프로토타입</title>
 <style>
@@ -1031,7 +1030,7 @@
               '<button class="ob yes" data-act="acceptoffer" data-id="' + o.id + '">수락</button>' +
               '<button class="ob no" data-act="rejectoffer" data-id="' + o.id + '">거절</button>' +
             "</div></div>";
-        }).join("") : '<div style="font-size:13px;color:var(--muted);padding:6px 0">아직 들어온 제안이 없어요.</div>") +
+        }).join("") : '<div style="font-size:13px;color:var(--muted);padding:6px 0">아직 들어온 제안이 없어요.</div>') +
         "</div>";
     } else if (canOffer){
       myOffers = '<div class="sect"><div class="notice" style="background:var(--sky-50);color:var(--sky-700)">' +
