@@ -1088,8 +1088,7 @@
         (it.status === "done"
           ? '<button class="cta" disabled>거래가 끝난 물건이에요</button>'
           : (canOffer ? '<button class="cta ghost" data-act="offer">가격 제안</button>' : "") +
-            (canSafe ? '<button class="cta" data-act="safebuy">안전결제</button>'
-                     : '<button class="cta" data-act="chat">채팅하기</button>')) +
+            '<button class="cta" data-act="chat">채팅하기</button>') +
       "</div>";
     }
 
@@ -1099,7 +1098,8 @@
       ways = '<div class="sect"><h4>거래 방식</h4>' +
         (it.safe ? '<div class="way"><span class="ic">🛡️</span><div><b>안전결제</b>' +
           "<span>돈을 공강마켓이 맡아뒀다가, 물건을 받고 확정하면 판매자에게 보내요. 수수료 " +
-          Math.round(FEE_RATE*100) + "% (최소 " + FEE_MIN.toLocaleString("ko-KR") + "원)</span></div></div>" : "") +
+          Math.round(FEE_RATE*100) + "% (최소 " + FEE_MIN.toLocaleString("ko-KR") + "원)<br>" +
+          "<b style='color:var(--sky-600)'>채팅방에서 '거래하기'로 시작해요.</b></span></div></div>" : "") +
         (it.drop ? '<div class="way"><span class="ic">🚪</span><div><b>문고리 거래</b>' +
           "<span>만나지 않고 판매자가 정한 곳에 두면 가져가요. 시간이 안 맞아도 거래할 수 있어요.</span></div></div>" : "") +
         '<div class="way"><span class="ic">🤝</span><div><b>직거래</b>' +
@@ -1388,7 +1388,7 @@
       '<div class="itembar">' +
         '<div class="th" style="--h:' + cat(it.cat).h + '">' + it.emo + "</div>" +
         '<div style="min-width:0"><div class="t">' + esc(it.title) + '</div><div class="p">' + won(it.price) + "</div></div>" +
-        '<button class="act" data-act="proposeplace">약속 잡기</button>' +
+        '<button class="act" data-act="dealmenu">거래하기</button>' +
       "</div>" +
       '<div class="msgs" id="msgs">' + msgs + "</div>" +
       '<div class="quick">' + QUICKS.map(function(q){
@@ -1880,7 +1880,7 @@
     resetfilter: function(){
       S.filter.cat = "all"; S.filter.freeOnly = false; S.filter.maxPrice = 0; render();
     },
-    item: function(el){ go("detail", el.getAttribute("data-id")); },
+    item: function(el){ closeOverlay(); go("detail", el.getAttribute("data-id")); },
     profile: function(el){ go("profile", el.getAttribute("data-id")); },
 
     sort: function(){
@@ -2310,10 +2310,31 @@
       S.draft.drop = S.draft.drop === false;
       el.setAttribute("aria-checked", String(S.draft.drop !== false));
     },
-    safebuy: function(){
-      if (S.verify < 2){ toast("학생증 인증을 마쳐야 안전결제를 쓸 수 있어요."); return; }
+    /* 채팅방 안에서 거래 방법을 고른다 */
+    dealmenu: function(){
+      var c = chat(current().param), it = item(c.itemId);
+      var e = escrowOfItem(it.id);
+      var mine = it.seller === "me";
+      var opts = "";
+      if (e){
+        opts += '<button class="opt" data-act="escrow" data-id="' + e.id + '">🛡️ 안전거래 진행 보기</button>';
+      } else if (!mine && it.safe && it.status !== "done"){
+        opts += '<button class="opt" data-act="safebuy" data-id="' + it.id + '">🛡️ 안전결제로 사기' +
+          '<span class="ck" style="color:var(--muted);font-size:11.5px">수수료 ' + Math.round(FEE_RATE*100) + "%</span></button>";
+      }
+      opts += '<button class="opt" data-act="proposeplace">📍 만날 약속 잡기</button>';
+      if (mine && !e) opts += '<button class="opt" data-act="item" data-id="' + it.id + '">📦 매물 상태 변경</button>';
+      sheet("<h3>어떻게 거래할까요?</h3>" + opts +
+        '<div class="sect2"><div style="font-size:12px;color:var(--muted);line-height:1.6">' +
+          "안전결제는 공강마켓이 돈을 맡아뒀다가 구매확정 뒤 판매자에게 보내요. " +
+          "직거래는 만나서 직접 주고받습니다.</div></div>");
+    },
+    safebuy: function(el){
+      if (S.verify < 2){ closeOverlay(); toast("학생증 인증을 마쳐야 안전결제를 쓸 수 있어요."); return; }
+      var id = (el && el.getAttribute("data-id")) || current().param;
+      closeOverlay();
       S.payWay = null;
-      go("safepay", current().param);
+      go("safepay", id);
     },
     payway: function(el){ S.payWay = el.getAttribute("data-v"); render(); },
     dosafepay: function(el){
@@ -2345,7 +2366,7 @@
         }, 1100);
       });
     },
-    escrow: function(el){ go("escrow", el.getAttribute("data-id")); },
+    escrow: function(el){ closeOverlay(); go("escrow", el.getAttribute("data-id")); },
     escrows: function(){ go("escrows"); },
     placed: function(el){
       var e = escrow(el.getAttribute("data-id")), it = item(e.itemId);
