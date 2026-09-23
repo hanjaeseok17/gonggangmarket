@@ -1,0 +1,1742 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{color-scheme:light dark;}
+</style>
+<title>공강마켓 프로토타입</title>
+<style>
+  :root{
+    --sky-50:#EAF6FE;
+    --sky-100:#D6ECFB;
+    --sky-200:#B6DEF8;
+    --sky-500:#1F9FE5;
+    --sky-600:#1385C6;
+    --sky-700:#0C6796;
+    --ink:#17212B;
+    --ink-2:#3E4C59;
+    --muted:#8494A2;
+    --faint:#AEBAC5;
+    --line:#EAEEF1;
+    --line-2:#DCE3E8;
+    --bg:#FFFFFF;
+    --sub:#F6F8FA;
+    --green:#12A55F;
+    --green-soft:#E4F7EE;
+    --red:#E0484D;
+    --amber:#B4731A;
+    --amber-soft:#FDF2E0;
+    --shadow-sm:0 1px 2px rgba(23,33,43,.06);
+    --shadow-md:0 6px 20px -8px rgba(23,33,43,.22);
+    --shadow-lg:0 18px 48px -18px rgba(12,40,64,.42);
+    --ui:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",system-ui,sans-serif;
+    --backdrop:#E4EBF0;
+    --backdrop-ink:#485866;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --backdrop:#0F1519; --backdrop-ink:#7C8C99; }
+  }
+  :root[data-theme="dark"]{ --backdrop:#0F1519; --backdrop-ink:#7C8C99; }
+
+  body{
+    background:var(--backdrop);
+    font-family:var(--ui);
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    padding:20px 12px 28px;
+    -webkit-font-smoothing:antialiased;
+    -webkit-tap-highlight-color:transparent;
+  }
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+  input,textarea,select{font-family:inherit;}
+
+  .stage-note{
+    color:var(--backdrop-ink);
+    font-size:12.5px;
+    text-align:center;
+    line-height:1.6;
+    max-width:420px;
+  }
+  .stage-note b{color:var(--backdrop-ink);font-weight:700;}
+
+  /* ===== 기기 프레임 ===== */
+  .phone{
+    width:390px;
+    height:min(844px, calc(100vh - 92px));
+    background:var(--bg);
+    border-radius:42px;
+    box-shadow:var(--shadow-lg), 0 0 0 10px #1B242C, 0 0 0 11px #384654;
+    overflow:hidden;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+  }
+  @media (max-width:440px),(max-height:700px){
+    body{padding:0;gap:0;justify-content:flex-start;}
+    .phone{width:100%;height:100vh;border-radius:0;box-shadow:none;}
+    .stage-note{display:none;}
+  }
+
+  .statusbar{
+    height:44px;
+    flex:none;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 22px;
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:.02em;
+    background:var(--bg);
+    z-index:40;
+  }
+  .statusbar .icons{display:flex;gap:5px;align-items:center;font-size:11px;letter-spacing:-.04em;}
+
+  .viewport{flex:1;position:relative;overflow:hidden;background:var(--bg);}
+  .screen{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    background:var(--bg);
+  }
+  .screen[hidden]{display:none !important;}
+  .screen.push{animation:slideIn .22s cubic-bezier(.25,.8,.35,1);}
+  @keyframes slideIn{from{transform:translateX(26px);opacity:.4;}to{transform:translateX(0);opacity:1;}}
+  @media (prefers-reduced-motion: reduce){ .screen.push{animation:none;} }
+
+  /* ===== 헤더 ===== */
+  .appbar{
+    flex:none;
+    height:52px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:0 6px 0 4px;
+    border-bottom:1px solid var(--line);
+    background:var(--bg);
+  }
+  .appbar .title{font-size:16.5px;font-weight:700;flex:1;padding-left:8px;}
+  .appbar .title.center{text-align:center;padding-right:44px;}
+  .iconbtn{
+    width:44px;height:44px;
+    display:grid;place-items:center;
+    border-radius:50%;
+    font-size:19px;
+    color:var(--ink-2);
+    flex:none;
+  }
+  .iconbtn:active{background:var(--sub);}
+  .iconbtn.badge{position:relative;}
+  .iconbtn.badge::after{
+    content:"";position:absolute;top:10px;right:11px;
+    width:7px;height:7px;border-radius:50%;background:var(--red);
+    border:1.5px solid var(--bg);
+  }
+
+  .searchbar{
+    flex:1;
+    height:38px;
+    background:var(--sub);
+    border-radius:10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:0 12px;
+    font-size:14px;
+    color:var(--muted);
+    border:1px solid transparent;
+  }
+  .searchbar input{
+    border:none;background:none;outline:none;
+    font-size:14.5px;color:var(--ink);width:100%;
+  }
+  .searchbar input::placeholder{color:var(--faint);}
+
+  .body{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+  .body.pad{padding-bottom:20px;}
+
+  /* ===== 카테고리 칩 ===== */
+  .chips{
+    display:flex;
+    gap:7px;
+    padding:11px 14px;
+    overflow-x:auto;
+    border-bottom:1px solid var(--line);
+    scrollbar-width:none;
+  }
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:none;
+    padding:7px 13px;
+    border-radius:999px;
+    background:var(--sub);
+    font-size:13.5px;
+    font-weight:500;
+    color:var(--ink-2);
+    white-space:nowrap;
+    border:1px solid transparent;
+  }
+  .chip[aria-pressed="true"]{background:var(--sky-500);color:#fff;font-weight:700;}
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:9px 16px;
+    border-bottom:1px solid var(--line);
+    font-size:13.5px;
+    color:var(--ink-2);
+  }
+  .toolbar button{display:flex;align-items:center;gap:4px;font-size:13.5px;color:var(--ink-2);font-weight:500;padding:4px 2px;}
+  .toolbar .count{color:var(--muted);font-size:12.5px;}
+  .fcount{
+    background:var(--sky-500);color:#fff;font-size:10.5px;font-weight:700;
+    min-width:16px;height:16px;border-radius:8px;display:inline-grid;place-items:center;padding:0 4px;
+  }
+
+  /* ===== 인증 배너 ===== */
+  .banner{
+    margin:12px 14px 2px;
+    background:linear-gradient(135deg,var(--sky-50),var(--sky-100));
+    border:1px solid var(--sky-200);
+    border-radius:14px;
+    padding:13px 15px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .banner .txt{flex:1;display:flex;flex-direction:column;gap:2px;}
+  .banner .h{font-size:13.5px;font-weight:700;color:var(--sky-700);}
+  .banner .s{font-size:12px;color:var(--sky-600);line-height:1.5;}
+  .banner .go{
+    flex:none;background:var(--sky-500);color:#fff;
+    font-size:12.5px;font-weight:700;padding:8px 13px;border-radius:9px;
+  }
+
+  /* ===== 매물 카드 ===== */
+  .list{display:flex;flex-direction:column;}
+  .card{
+    display:flex;
+    gap:13px;
+    padding:14px 16px;
+    border-bottom:1px solid var(--line);
+    text-align:left;
+    width:100%;
+    align-items:flex-start;
+  }
+  .card:active{background:var(--sub);}
+  .thumb{
+    width:92px;height:92px;flex:none;
+    border-radius:11px;
+    display:grid;place-items:center;
+    font-size:36px;
+    background:linear-gradient(145deg, hsl(var(--h) 72% 93%), hsl(var(--h) 58% 83%));
+    position:relative;
+    overflow:hidden;
+  }
+  .thumb.sold::before{
+    content:"거래완료";
+    position:absolute;inset:0;
+    background:rgba(23,33,43,.62);
+    color:#fff;font-size:12.5px;font-weight:700;
+    display:grid;place-items:center;
+    letter-spacing:.02em;
+  }
+  .card .info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;padding-top:1px;}
+  .card .t{
+    font-size:14.5px;line-height:1.4;font-weight:500;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  .card .m{font-size:12px;color:var(--muted);display:flex;gap:4px;align-items:center;}
+  .card .p{font-size:15.5px;font-weight:700;margin-top:2px;}
+  .card .p.free{color:var(--green);}
+  .card .foot{display:flex;align-items:center;gap:8px;margin-top:3px;}
+  .card .likes{
+    margin-left:auto;font-size:11.5px;color:var(--muted);
+    display:flex;align-items:center;gap:3px;
+  }
+  .tag{
+    font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.01em;
+  }
+  .tag.resv{background:var(--amber-soft);color:var(--amber);}
+  .tag.free{background:var(--green-soft);color:var(--green);}
+  .tag.done{background:var(--sub);color:var(--muted);}
+
+  /* ===== 빈 화면 / 로딩 ===== */
+  .empty{
+    padding:64px 32px;
+    display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;
+  }
+  .empty .ic{font-size:38px;opacity:.5;}
+  .empty .h{font-size:14.5px;font-weight:700;}
+  .empty .s{font-size:13px;color:var(--muted);line-height:1.6;}
+  .empty .act{
+    margin-top:8px;background:var(--sky-500);color:#fff;
+    font-size:13.5px;font-weight:700;padding:10px 18px;border-radius:10px;
+  }
+  .skel{padding:14px 16px;display:flex;gap:13px;border-bottom:1px solid var(--line);}
+  .skel .a{width:92px;height:92px;border-radius:11px;flex:none;}
+  .skel .b{flex:1;display:flex;flex-direction:column;gap:8px;padding-top:4px;}
+  .sh{background:linear-gradient(90deg,var(--sub) 25%,#EDF1F4 37%,var(--sub) 63%);
+    background-size:400% 100%;animation:sh 1.3s ease infinite;border-radius:5px;}
+  @keyframes sh{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
+
+  /* ===== 상세 ===== */
+  .carousel{
+    display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;
+  }
+  .carousel::-webkit-scrollbar{display:none;}
+  .carousel .slide{
+    flex:none;width:100%;aspect-ratio:4/3;scroll-snap-align:center;
+    display:grid;place-items:center;font-size:88px;
+    background:linear-gradient(145deg, hsl(var(--h) 72% 94%), hsl(var(--h) 55% 82%));
+  }
+  .dots{display:flex;gap:5px;justify-content:center;padding:10px 0 2px;}
+  .dots i{width:6px;height:6px;border-radius:50%;background:var(--line-2);display:block;}
+  .dots i.on{background:var(--sky-500);width:16px;border-radius:3px;}
+
+  .seller{
+    display:flex;align-items:center;gap:11px;padding:14px 16px;
+    border-bottom:1px solid var(--line);width:100%;text-align:left;
+  }
+  .avatar{
+    width:42px;height:42px;border-radius:50%;flex:none;display:grid;place-items:center;
+    font-size:18px;background:var(--sky-50);color:var(--sky-600);font-weight:700;
+  }
+  .seller .n{font-size:14.5px;font-weight:700;}
+  .seller .c{font-size:12px;color:var(--muted);}
+  .trust{margin-left:auto;text-align:right;}
+  .trust .v{font-size:15px;font-weight:700;color:var(--sky-600);}
+  .trust .l{font-size:10.5px;color:var(--muted);}
+
+  .sect{padding:16px;display:flex;flex-direction:column;gap:9px;border-bottom:1px solid var(--line);}
+  .sect h4{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.03em;}
+  .detail-title{font-size:19px;font-weight:700;line-height:1.35;}
+  .detail-meta{font-size:12.5px;color:var(--muted);}
+  .detail-price{font-size:23px;font-weight:700;}
+  .detail-price.free{color:var(--green);}
+  .desc{font-size:14.5px;line-height:1.75;color:var(--ink-2);white-space:pre-wrap;}
+  .places{display:flex;gap:7px;flex-wrap:wrap;}
+  .place{
+    background:var(--sky-50);color:var(--sky-700);
+    font-size:12.5px;font-weight:500;padding:7px 11px;border-radius:8px;
+    display:flex;gap:5px;align-items:center;
+  }
+  .notice{
+    background:var(--sub);border-radius:10px;padding:12px 14px;
+    font-size:12px;color:var(--muted);line-height:1.65;
+  }
+  .kv{display:flex;gap:10px;font-size:13.5px;}
+  .kv .k{color:var(--muted);min-width:64px;flex:none;}
+  .kv .v{color:var(--ink-2);}
+
+  .bottombar{
+    flex:none;border-top:1px solid var(--line);background:var(--bg);
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    display:flex;align-items:center;gap:12px;
+  }
+  .likebtn{
+    width:46px;height:46px;flex:none;display:grid;place-items:center;
+    font-size:23px;border-radius:11px;border:1px solid var(--line-2);
+  }
+  .likebtn[aria-pressed="true"]{border-color:#F7C6C8;background:#FEF1F1;}
+  .cta{
+    flex:1;height:46px;border-radius:11px;background:var(--sky-500);color:#fff;
+    font-size:15px;font-weight:700;display:grid;place-items:center;
+  }
+  .cta:active{background:var(--sky-600);}
+  .cta.ghost{background:var(--sub);color:var(--ink-2);}
+  .cta[disabled]{background:var(--line-2);color:#fff;}
+
+  /* ===== 탭바 ===== */
+  .tabbar{
+    flex:none;display:flex;border-top:1px solid var(--line);background:var(--bg);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .tabbar button{
+    flex:1;padding:8px 0 9px;display:flex;flex-direction:column;align-items:center;gap:2px;
+    font-size:10.5px;color:var(--faint);font-weight:500;position:relative;
+  }
+  .tabbar button .ic{font-size:21px;line-height:1;filter:grayscale(1);opacity:.55;}
+  .tabbar button[aria-selected="true"]{color:var(--sky-600);font-weight:700;}
+  .tabbar button[aria-selected="true"] .ic{filter:none;opacity:1;}
+  .tabbar .dot{
+    position:absolute;top:6px;left:calc(50% + 8px);
+    width:7px;height:7px;border-radius:50%;background:var(--red);
+  }
+
+  /* ===== 폼 ===== */
+  .field{padding:15px 16px;display:flex;flex-direction:column;gap:7px;border-bottom:1px solid var(--line);}
+  .field label{font-size:12.5px;font-weight:700;color:var(--ink-2);display:flex;gap:4px;}
+  .field label .req{color:var(--sky-500);}
+  .field input[type="text"],.field input[type="number"],.field textarea,.field select{
+    width:100%;border:none;outline:none;font-size:15px;color:var(--ink);
+    background:none;padding:2px 0;resize:none;
+  }
+  .field input::placeholder,.field textarea::placeholder{color:var(--faint);}
+  .field .hint{font-size:11.5px;color:var(--muted);line-height:1.55;}
+  .field .err{font-size:11.5px;color:var(--red);font-weight:500;}
+  .photos{display:flex;gap:9px;overflow-x:auto;padding:2px 0;scrollbar-width:none;}
+  .photos::-webkit-scrollbar{display:none;}
+  .photo-add{
+    width:74px;height:74px;flex:none;border-radius:11px;border:1px dashed var(--line-2);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    font-size:19px;color:var(--muted);
+  }
+  .photo-add span{font-size:10.5px;}
+  .photo{
+    width:74px;height:74px;flex:none;border-radius:11px;display:grid;place-items:center;
+    font-size:30px;position:relative;
+    background:linear-gradient(145deg, hsl(var(--h) 72% 93%), hsl(var(--h) 58% 83%));
+  }
+  .photo .x{
+    position:absolute;top:-5px;right:-5px;width:21px;height:21px;border-radius:50%;
+    background:var(--ink);color:#fff;font-size:12px;display:grid;place-items:center;
+  }
+  .photo .rep{
+    position:absolute;bottom:0;left:0;right:0;background:rgba(23,33,43,.6);color:#fff;
+    font-size:9.5px;text-align:center;padding:2px 0;border-radius:0 0 11px 11px;
+  }
+  .segmented{display:flex;gap:7px;flex-wrap:wrap;}
+  .seg{
+    padding:9px 14px;border-radius:9px;background:var(--sub);
+    font-size:13.5px;color:var(--ink-2);font-weight:500;border:1px solid transparent;
+  }
+  .seg[aria-pressed="true"]{background:var(--sky-50);border-color:var(--sky-500);color:var(--sky-700);font-weight:700;}
+  .switch{
+    width:46px;height:27px;border-radius:14px;background:var(--line-2);
+    position:relative;flex:none;transition:background .16s;
+  }
+  .switch::after{
+    content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;
+    background:#fff;box-shadow:var(--shadow-sm);transition:transform .16s;
+  }
+  .switch[aria-checked="true"]{background:var(--sky-500);}
+  .switch[aria-checked="true"]::after{transform:translateX(19px);}
+  .rowline{
+    display:flex;align-items:center;gap:12px;padding:14px 16px;
+    border-bottom:1px solid var(--line);width:100%;text-align:left;font-size:14.5px;
+  }
+  .rowline:active{background:var(--sub);}
+  .rowline .sub{margin-left:auto;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+
+  /* ===== 채팅 ===== */
+  .chatlist .row{display:flex;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line);width:100%;text-align:left;align-items:center;}
+  .chatlist .row:active{background:var(--sub);}
+  .chatlist .msg{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .chatlist .top{display:flex;align-items:baseline;gap:6px;}
+  .chatlist .nm{font-size:14.5px;font-weight:700;}
+  .chatlist .tm{font-size:11.5px;color:var(--faint);margin-left:auto;flex:none;}
+  .unread{
+    background:var(--sky-500);color:#fff;font-size:10.5px;font-weight:700;
+    min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;padding:0 5px;flex:none;
+  }
+  .itembar{
+    display:flex;align-items:center;gap:11px;padding:10px 14px;
+    background:var(--sub);border-bottom:1px solid var(--line);
+  }
+  .itembar .th{width:42px;height:42px;border-radius:8px;display:grid;place-items:center;font-size:20px;flex:none;
+    background:linear-gradient(145deg, hsl(var(--h) 72% 93%), hsl(var(--h) 58% 83%));}
+  .itembar .t{font-size:13px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .itembar .p{font-size:14px;font-weight:700;}
+  .itembar .act{margin-left:auto;flex:none;background:var(--bg);border:1px solid var(--line-2);
+    font-size:12px;font-weight:700;padding:7px 11px;border-radius:8px;color:var(--ink-2);}
+
+  .msgs{flex:1;overflow-y:auto;padding:14px 14px 10px;display:flex;flex-direction:column;gap:9px;background:var(--bg);}
+  .bubble{max-width:74%;display:flex;flex-direction:column;gap:3px;}
+  .bubble .b{
+    padding:9px 13px;border-radius:15px;font-size:14.5px;line-height:1.5;
+    background:var(--sub);color:var(--ink);border-bottom-left-radius:4px;
+  }
+  .bubble .tm{font-size:10.5px;color:var(--faint);padding:0 3px;}
+  .bubble.me{align-self:flex-end;align-items:flex-end;}
+  .bubble.me .b{background:var(--sky-500);color:#fff;border-bottom-left-radius:15px;border-bottom-right-radius:4px;}
+  .sysmsg{
+    align-self:center;font-size:11.5px;color:var(--muted);background:var(--sub);
+    padding:6px 12px;border-radius:999px;text-align:center;max-width:85%;line-height:1.5;
+  }
+  .warnmsg{
+    align-self:center;font-size:11.5px;color:var(--amber);background:var(--amber-soft);
+    padding:8px 13px;border-radius:10px;text-align:center;max-width:90%;line-height:1.55;font-weight:500;
+  }
+  .typing .b{color:var(--muted);letter-spacing:2px;}
+  .quick{display:flex;gap:7px;padding:8px 12px 0;overflow-x:auto;scrollbar-width:none;flex:none;}
+  .quick::-webkit-scrollbar{display:none;}
+  .quick button{
+    flex:none;border:1px solid var(--sky-200);background:var(--sky-50);color:var(--sky-700);
+    font-size:12.5px;font-weight:500;padding:7px 12px;border-radius:999px;white-space:nowrap;
+  }
+  .composer{
+    flex:none;display:flex;gap:9px;align-items:flex-end;padding:9px 12px calc(9px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line);background:var(--bg);
+  }
+  .composer .box{
+    flex:1;background:var(--sub);border-radius:19px;padding:9px 14px;
+    display:flex;align-items:center;
+  }
+  .composer input{border:none;background:none;outline:none;width:100%;font-size:14.5px;}
+  .send{
+    width:38px;height:38px;flex:none;border-radius:50%;background:var(--sky-500);color:#fff;
+    display:grid;place-items:center;font-size:16px;
+  }
+  .send[disabled]{background:var(--line-2);}
+
+  /* ===== 프로필 / 내 정보 ===== */
+  .prof{padding:20px 16px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line);}
+  .prof .av{width:58px;height:58px;font-size:24px;}
+  .prof .nm{font-size:17px;font-weight:700;}
+  .prof .co{font-size:13px;color:var(--muted);margin-top:1px;}
+  .statrow{display:flex;border-bottom:1px solid var(--line);}
+  .statrow div{flex:1;padding:14px 4px;text-align:center;border-right:1px solid var(--line);}
+  .statrow div:last-child{border-right:none;}
+  .statrow .v{font-size:18px;font-weight:700;}
+  .statrow .l{font-size:11.5px;color:var(--muted);margin-top:1px;}
+  .grouplabel{padding:18px 16px 7px;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.03em;}
+
+  .steps{padding:16px;display:flex;flex-direction:column;gap:11px;}
+  .step{
+    display:flex;gap:12px;padding:14px;border:1px solid var(--line-2);border-radius:13px;align-items:flex-start;
+  }
+  .step.on{border-color:var(--sky-500);background:var(--sky-50);}
+  .step.done{border-color:var(--green);background:var(--green-soft);}
+  .step .no{
+    width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;
+    font-size:12px;font-weight:700;background:var(--line);color:var(--muted);
+  }
+  .step.on .no{background:var(--sky-500);color:#fff;}
+  .step.done .no{background:var(--green);color:#fff;}
+  .step .c{flex:1;display:flex;flex-direction:column;gap:3px;}
+  .step .h{font-size:14px;font-weight:700;}
+  .step .s{font-size:12.5px;color:var(--ink-2);line-height:1.6;}
+  .step .btn{
+    margin-top:8px;align-self:flex-start;background:var(--sky-500);color:#fff;
+    font-size:13px;font-weight:700;padding:9px 15px;border-radius:9px;
+  }
+  .step .btn.sub{background:var(--bg);color:var(--sky-600);border:1px solid var(--sky-200);}
+
+  /* ===== 오버레이 ===== */
+  .scrim{
+    position:absolute;inset:0;background:rgba(15,25,34,.42);z-index:60;
+    display:flex;align-items:flex-end;
+    animation:fade .16s ease;
+  }
+  .scrim.center{align-items:center;justify-content:center;padding:28px;}
+  .scrim[hidden]{display:none !important;}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .sheet{
+    width:100%;background:var(--bg);border-radius:18px 18px 0 0;
+    padding-bottom:calc(8px + env(safe-area-inset-bottom));
+    animation:up .2s cubic-bezier(.2,.9,.3,1);
+    max-height:82%;overflow-y:auto;
+  }
+  @keyframes up{from{transform:translateY(24px);}to{transform:translateY(0);}}
+  .sheet .grab{width:36px;height:4px;border-radius:2px;background:var(--line-2);margin:9px auto 4px;}
+  .sheet h3{font-size:15.5px;font-weight:700;padding:10px 18px 6px;}
+  .sheet .opt{
+    display:flex;align-items:center;gap:11px;padding:14px 18px;width:100%;text-align:left;font-size:14.5px;
+  }
+  .sheet .opt:active{background:var(--sub);}
+  .sheet .opt[aria-selected="true"]{color:var(--sky-600);font-weight:700;}
+  .sheet .opt .ck{margin-left:auto;color:var(--sky-500);}
+  .sheet .opt.danger{color:var(--red);}
+  .sheet .sect2{padding:6px 18px 14px;display:flex;flex-direction:column;gap:9px;}
+  .dialog{
+    width:100%;max-width:290px;background:var(--bg);border-radius:15px;padding:22px 20px 14px;
+    display:flex;flex-direction:column;gap:8px;text-align:center;
+    animation:pop .17s cubic-bezier(.2,.9,.3,1);
+  }
+  @keyframes pop{from{transform:scale(.94);opacity:.6;}to{transform:scale(1);opacity:1;}}
+  .dialog h3{font-size:16px;font-weight:700;}
+  .dialog p{font-size:13.5px;color:var(--ink-2);line-height:1.6;}
+  .dialog .acts{display:flex;gap:8px;margin-top:10px;}
+  .dialog .acts button{
+    flex:1;padding:12px 0;border-radius:10px;font-size:14.5px;font-weight:700;
+  }
+  .dialog .acts .no{background:var(--sub);color:var(--ink-2);}
+  .dialog .acts .yes{background:var(--sky-500);color:#fff;}
+  .dialog .acts .yes.danger{background:var(--red);}
+
+  .toast{
+    position:absolute;left:16px;right:16px;bottom:88px;z-index:80;
+    background:rgba(23,33,43,.93);color:#fff;border-radius:11px;
+    padding:13px 15px;font-size:13.5px;line-height:1.5;
+    display:flex;align-items:center;gap:10px;
+    animation:up .2s cubic-bezier(.2,.9,.3,1);
+    box-shadow:var(--shadow-md);
+  }
+  .toast[hidden]{display:none !important;}
+  .toast button{margin-left:auto;color:var(--sky-200);font-weight:700;font-size:13px;flex:none;}
+
+  .demo-pill{
+    position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:50;
+    background:rgba(23,33,43,.8);color:#fff;font-size:10px;font-weight:700;
+    padding:3px 9px;border-radius:999px;letter-spacing:.04em;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="statusbar">
+    <span id="clock">9:41</span>
+    <span class="icons"><span>▮▮▮</span><span>◗</span><span>100%</span></span>
+  </div>
+  <span class="demo-pill">DEMO · 가상 데이터</span>
+
+  <div class="viewport" id="viewport"></div>
+
+  <nav class="tabbar" id="tabbar"></nav>
+
+  <div class="scrim" id="scrim" hidden></div>
+  <div class="toast" id="toast" hidden></div>
+</div>
+
+<p class="stage-note"><b>공강마켓 프로토타입</b> — 화면을 눌러 실제 앱처럼 써볼 수 있습니다. 매물·판매자·대화는 모두 가상 데이터입니다.</p>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ===================== 데이터 ===================== */
+  var CATS = [
+    {id:"all",   name:"전체"},
+    {id:"book",  name:"전공서적", emo:"📚", h:210},
+    {id:"elec",  name:"전자기기", emo:"💻", h:196},
+    {id:"furn",  name:"가구",     emo:"🪑", h:28},
+    {id:"life",  name:"자취·생활", emo:"🍳", h:150},
+    {id:"cloth", name:"의류·잡화", emo:"🧥", h:340},
+    {id:"sport", name:"스포츠·취미", emo:"🚲", h:96},
+    {id:"stat",  name:"문구·학용품", emo:"✏️", h:45},
+    {id:"etc",   name:"기타",     emo:"📦", h:250}
+  ];
+  function cat(id){ for(var i=0;i<CATS.length;i++) if(CATS[i].id===id) return CATS[i]; return CATS[8]; }
+
+  var PLACES = ["중앙도서관 1층","학생회관 로비","정문","공대 5호관 앞","기숙사 A동 출입구","제2공학관 라운지","후문 편의점 앞"];
+
+  var SELLERS = [
+    {id:"u1", nick:"도서관붙박이", college:"공과대학", trust:72, deals:9,  emo:"🦉"},
+    {id:"u2", nick:"졸업준비생",   college:"경영대학", trust:65, deals:6,  emo:"🎓"},
+    {id:"u3", nick:"자취3년차",    college:"사회과학대", trust:84, deals:17, emo:"🍚"},
+    {id:"u4", nick:"새내기지원",   college:"자연과학대", trust:50, deals:1,  emo:"🌱"},
+    {id:"u5", nick:"기숙사101호",  college:"인문대학", trust:58, deals:4,  emo:"🛏️"},
+    {id:"u6", nick:"중도죽순이",   college:"공과대학", trust:77, deals:12, emo:"☕"}
+  ];
+  function seller(id){ for(var i=0;i<SELLERS.length;i++) if(SELLERS[i].id===id) return SELLERS[i]; return SELLERS[0]; }
+
+  var ME = {id:"me", nick:"나", college:"공과대학", trust:50, deals:0, emo:"🙂"};
+
+  var SEED = [
+    {t:"자료구조와 알고리즘 개정4판 (필기 거의 없음)", c:"book", p:12000, s:"u1", min:14, likes:8, emo:"📘",
+     d:"2학기 자료구조 교재입니다.\n1~5장에 형광펜 표시 조금 있고 나머지는 깨끗해요.\n찢어진 곳 없습니다.",
+     meta:{"과목명":"자료구조","교수명":"김영수","ISBN":"9788956746"}, pl:[0,3]},
+    {t:"공학용 계산기 fx-570EX 급처", c:"stat", p:25000, s:"u6", min:47, likes:14, emo:"🔢",
+     d:"시험 끝나서 내놓습니다. 작동 잘 되고 커버 있어요.\n건전지 새로 넣었습니다.", pl:[0,1]},
+    {t:"아이패드 9세대 64GB 와이파이 (케이스 포함)", c:"elec", p:210000, s:"u2", min:96, likes:31, emo:"📱",
+     d:"작년에 인강용으로 샀는데 거의 안 썼어요.\n배터리 성능 94%, 액정 기스 없습니다.\n정품 케이스랑 충전기 같이 드려요.\n직거래만 가능합니다.", pl:[1,2]},
+    {t:"경영대 과잠 L 사이즈", c:"cloth", p:15000, s:"u2", min:140, likes:6, emo:"🧥",
+     d:"작년 과잠이고 두 번 입었습니다. 세탁해뒀어요.\n키 175에 딱 맞았습니다.", pl:[1]},
+    {t:"미니 냉장고 45L (자취방 딱 좋아요)", c:"life", p:40000, s:"u3", min:190, likes:22, emo:"🧊",
+     d:"자취방에서 2년 썼습니다. 소음 없고 냉동칸도 잘 됩니다.\n내부 청소 다 해뒀어요.\n무거워서 차 있으신 분이면 좋습니다.", pl:[4], resv:true},
+    {t:"시디즈 의자 (높이조절 잘 됨)", c:"furn", p:30000, s:"u3", min:260, likes:11, emo:"🪑",
+     d:"졸업해서 내놓습니다. 바퀴 다 멀쩡하고 등받이 튼튼해요.", pl:[4,6]},
+    {t:"일반화학 8판 + 솔루션", c:"book", p:8000, s:"u4", min:310, likes:5, emo:"🧪",
+     d:"1학년 일반화학 교재입니다. 솔루션 같이 드려요.\n밑줄 조금 있습니다.",
+     meta:{"과목명":"일반화학및실험","교수명":"박지훈"}, pl:[3]},
+    {t:"에어팟 프로 2세대 (정품, 보증기간 남음)", c:"elec", p:120000, s:"u6", min:420, likes:38, emo:"🎧",
+     d:"6개월 사용했고 노이즈캔슬링 정상입니다.\n본체·케이스 모두 기스 거의 없어요.\n영수증 있습니다.", pl:[0,1,2]},
+    {t:"전기포트 나눔합니다", c:"life", p:0, s:"u5", min:480, likes:19, emo:"🫖",
+     d:"기숙사 나가면서 나눔합니다. 잘 끓어요.\n먼저 연락 주시는 분께 드릴게요.", pl:[4]},
+    {t:"하이브리드 자전거 (등하교용)", c:"sport", p:85000, s:"u1", min:600, likes:16, emo:"🚲",
+     d:"통학용으로 1년 탔습니다. 브레이크 최근에 정비했어요.\n자물쇠 같이 드립니다.", pl:[2,6]},
+    {t:"빨래건조대 나눔", c:"life", p:0, s:"u3", min:720, likes:9, emo:"🧺",
+     d:"멀쩡한데 이사 가면서 못 가져갑니다. 가져가실 분!", pl:[4]},
+    {t:"노트북 거치대 (알루미늄)", c:"etc", p:7000, s:"u4", min:900, likes:4, emo:"🖥️",
+     d:"각도 조절 되는 거치대입니다. 흔들림 없어요.", pl:[0]},
+    {t:"책상 스탠드 LED", c:"furn", p:5000, s:"u5", min:1100, likes:7, emo:"💡",
+     d:"밝기 3단계 조절됩니다. 기숙사에서 쓰던 거예요.", pl:[4]},
+    {t:"토익 교재 세트 (RC+LC)", c:"book", p:10000, s:"u1", min:1500, likes:12, emo:"📗",
+     d:"해커스 RC LC 세트입니다. 답지 있고 필기 조금 있어요.",
+     meta:{"과목명":"토익 대비"}, pl:[0,1], done:true},
+    {t:"캠핑 의자 2개 일괄", c:"sport", p:12000, s:"u2", min:2100, likes:3, emo:"⛺",
+     d:"엠티 때 쓰고 보관만 했습니다. 상태 좋아요.", pl:[2]}
+  ];
+
+  var QUICKS = ["아직 판매 중인가요?","언제 거래 가능하세요?","조금 깎아주실 수 있나요?","오늘 학교인데 지금 될까요?"];
+  var REPLIES = [
+    "네 아직 있습니다!","오늘 오후 3시 이후에 공강이라 그때 가능해요.","중도 1층에서 뵐까요?",
+    "죄송해요 그 가격은 조금 어려울 것 같아요 🥲","네 좋아요. 그때 뵙겠습니다!","지금은 수업 중이라 이따 연락드릴게요."
+  ];
+
+  /* ===================== 상태 ===================== */
+  var S = {
+    tab:"home",
+    stack:[],
+    items:[],
+    likes:{},
+    chats:[],
+    verify:1,              // 0 미인증 · 1 이메일 완료 · 2 전체 완료
+    reviewing:false,
+    filter:{cat:"all", sort:"new", freeOnly:false, maxPrice:0, q:""},
+    recent:["자료구조","미니 냉장고","계산기"],
+    draft:null,
+    notiOn:true
+  };
+
+  SEED.forEach(function(s,i){
+    S.items.push({
+      id:"i"+(i+1), title:s.t, cat:s.c, price:s.p, seller:s.s, mins:s.min,
+      likes:s.likes, emo:s.emo, desc:s.d, meta:s.meta||null,
+      places:(s.pl||[0]).map(function(n){return PLACES[n];}),
+      status: s.done ? "done" : (s.resv ? "resv" : "sale"),
+      views: 20 + ((i*37)%180)
+    });
+  });
+
+  /* 대화 하나는 미리 진행돼 있게 둔다 — 빈 채팅 목록으로 시작하면 기능을 못 본다 */
+  S.chats.push({
+    id:"c1", itemId:"i3", withId:"u2", unread:1,
+    msgs:[
+      {me:true,  t:"아직 판매 중인가요?", m:38},
+      {me:false, t:"네 아직 있습니다!", m:35},
+      {me:false, t:"오늘 5시 이후에 공강이라 그때 가능해요.", m:34}
+    ]
+  });
+
+  /* ===================== 유틸 ===================== */
+  var vp = document.getElementById("viewport");
+  var tabbar = document.getElementById("tabbar");
+  var scrim = document.getElementById("scrim");
+  var toastEl = document.getElementById("toast");
+
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function won(n){ return n === 0 ? "나눔" : n.toLocaleString("ko-KR") + "원"; }
+  function ago(m){
+    if (m < 1) return "방금 전";
+    if (m < 60) return m + "분 전";
+    if (m < 1440) return Math.floor(m/60) + "시간 전";
+    var d = Math.floor(m/1440);
+    return d < 8 ? d + "일 전" : "9월 " + (23 - Math.min(d,20)) + "일";
+  }
+  function item(id){ for(var i=0;i<S.items.length;i++) if(S.items[i].id===id) return S.items[i]; return null; }
+  function chat(id){ for(var i=0;i<S.chats.length;i++) if(S.chats[i].id===id) return S.chats[i]; return null; }
+  function unreadTotal(){ var n=0; S.chats.forEach(function(c){ n += c.unread; }); return n; }
+
+  var toastTimer = null;
+  function toast(msg, actionLabel, action){
+    toastEl.innerHTML = "<span>" + esc(msg) + "</span>" +
+      (actionLabel ? '<button type="button" id="toast-act">' + esc(actionLabel) + "</button>" : "");
+    toastEl.hidden = false;
+    if (actionLabel){
+      document.getElementById("toast-act").onclick = function(){ toastEl.hidden = true; if(action) action(); };
+    }
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.hidden = true; }, 2600);
+  }
+
+  function closeOverlay(){ scrim.hidden = true; scrim.innerHTML = ""; }
+  scrim.addEventListener("click", function(e){ if (e.target === scrim) closeOverlay(); });
+
+  function sheet(html){
+    scrim.className = "scrim";
+    scrim.innerHTML = '<div class="sheet"><div class="grab"></div>' + html + "</div>";
+    scrim.hidden = false;
+  }
+  function dialog(title, body, yes, onYes, danger){
+    scrim.className = "scrim center";
+    scrim.innerHTML =
+      '<div class="dialog"><h3>' + esc(title) + "</h3><p>" + esc(body) + "</p>" +
+      '<div class="acts"><button type="button" class="no" data-x>취소</button>' +
+      '<button type="button" class="yes' + (danger ? " danger" : "") + '" data-y>' + esc(yes) + "</button></div></div>";
+    scrim.hidden = false;
+    scrim.querySelector("[data-x]").onclick = closeOverlay;
+    scrim.querySelector("[data-y]").onclick = function(){ closeOverlay(); onYes(); };
+  }
+
+  /* ===================== 네비게이션 ===================== */
+  function go(name, param){
+    S.stack.push({name:name, param:param});
+    render();
+  }
+  function back(){
+    S.stack.pop();
+    render();
+  }
+  function switchTab(t){
+    S.tab = t; S.stack = [];
+    render();
+  }
+
+  function current(){
+    return S.stack.length ? S.stack[S.stack.length-1] : {name:"tab:"+S.tab};
+  }
+
+  /* ===================== 공통 조각 ===================== */
+  function appbar(title, opts){
+    opts = opts || {};
+    return '<div class="appbar">' +
+      (opts.back !== false ? '<button class="iconbtn" data-act="back" aria-label="뒤로">‹</button>' : '<span style="width:8px"></span>') +
+      '<div class="title' + (opts.center ? " center" : "") + '">' + esc(title) + "</div>" +
+      (opts.right || "") + "</div>";
+  }
+
+  function cardHTML(it){
+    var c = cat(it.cat), liked = !!S.likes[it.id];
+    var tag = it.status === "resv" ? '<span class="tag resv">예약중</span>' :
+              it.status === "done" ? '<span class="tag done">거래완료</span>' :
+              it.price === 0 ? '<span class="tag free">나눔</span>' : "";
+    return '<button class="card" data-act="item" data-id="' + it.id + '">' +
+      '<div class="thumb' + (it.status==="done" ? " sold" : "") + '" style="--h:' + c.h + '">' + it.emo + "</div>" +
+      '<div class="info">' +
+        '<div class="t">' + esc(it.title) + "</div>" +
+        '<div class="m">' + esc(it.places[0]) + " · " + ago(it.mins) + "</div>" +
+        '<div class="p' + (it.price===0 ? " free" : "") + '">' + won(it.price) + "</div>" +
+        '<div class="foot">' + tag +
+          '<span class="likes">' + (liked ? "❤️" : "🤍") + " " + (it.likes + (liked?1:0)) + "</span>" +
+        "</div>" +
+      "</div></button>";
+  }
+
+  function filtered(){
+    var f = S.filter;
+    var out = S.items.filter(function(it){
+      if (f.cat !== "all" && it.cat !== f.cat) return false;
+      if (f.freeOnly && it.price !== 0) return false;
+      if (f.maxPrice && it.price > f.maxPrice) return false;
+      if (f.q){
+        var hay = (it.title + " " + it.desc + " " + (it.meta ? Object.keys(it.meta).map(function(k){return it.meta[k];}).join(" ") : "")).toLowerCase();
+        if (hay.indexOf(f.q.toLowerCase()) === -1) return false;
+      }
+      return true;
+    });
+    if (f.sort === "low") out.sort(function(a,b){ return a.price - b.price; });
+    else if (f.sort === "like") out.sort(function(a,b){ return b.likes - a.likes; });
+    else out.sort(function(a,b){ return a.mins - b.mins; });
+    /* 거래완료는 목록 맨 뒤로 (FR-FIND-05) */
+    out.sort(function(a,b){ return (a.status==="done"?1:0) - (b.status==="done"?1:0); });
+    return out;
+  }
+
+  function activeFilters(){
+    var n = 0;
+    if (S.filter.cat !== "all") n++;
+    if (S.filter.freeOnly) n++;
+    if (S.filter.maxPrice) n++;
+    return n;
+  }
+
+  /* ===================== 화면: 홈 ===================== */
+  function screenHome(){
+    var list = filtered();
+    var banner = S.verify < 2 ?
+      '<div class="banner"><div class="txt">' +
+        '<div class="h">' + (S.reviewing ? "학생증을 확인하고 있어요" : (S.verify===1 ? "학생증 인증만 남았어요" : "학교 인증이 필요해요")) + "</div>" +
+        '<div class="s">' + (S.reviewing ? "보통 12시간 안에 끝나요" : "인증하면 물건을 올릴 수 있어요") + "</div>" +
+      "</div>" + (S.reviewing ? "" : '<button class="go" data-act="verify">인증하기</button>') + "</div>" : "";
+
+    var chips = CATS.map(function(c){
+      return '<button class="chip" data-act="cat" data-id="' + c.id + '" aria-pressed="' +
+        (S.filter.cat===c.id) + '">' + (c.emo ? c.emo + " " : "") + esc(c.name) + "</button>";
+    }).join("");
+
+    var sortName = S.filter.sort === "low" ? "저가순" : S.filter.sort === "like" ? "인기순" : "최신순";
+    var fc = activeFilters();
+
+    var body = list.length
+      ? '<div class="list">' + list.map(cardHTML).join("") + "</div>"
+      : '<div class="empty"><div class="ic">🔍</div><div class="h">조건에 맞는 물건이 없어요</div>' +
+        '<div class="s">필터를 바꾸거나 다른 카테고리를 눌러보세요.</div>' +
+        '<button class="act" data-act="resetfilter">필터 초기화</button></div>';
+
+    return '<div class="appbar">' +
+        '<div class="title" style="padding-left:12px">한국대</div>' +
+        '<button class="iconbtn" data-act="search" aria-label="검색">🔍</button>' +
+        '<button class="iconbtn badge" data-act="noti" aria-label="알림">🔔</button>' +
+      "</div>" +
+      '<div class="chips">' + chips + "</div>" +
+      '<div class="toolbar">' +
+        '<button data-act="sort">' + sortName + " ▾</button>" +
+        '<span class="count">' + list.length + "개</span>" +
+        '<button data-act="filter">필터 ' + (fc ? '<span class="fcount">' + fc + "</span>" : "⚙") + "</button>" +
+      "</div>" +
+      '<div class="body">' + banner + body + "</div>";
+  }
+
+  /* ===================== 화면: 검색 ===================== */
+  function screenSearch(){
+    var q = S.filter.q;
+    var body;
+    if (!q){
+      body = '<div class="sect" style="border:none"><h4>최근 검색어</h4><div class="segmented">' +
+        (S.recent.length ? S.recent.map(function(r){
+          return '<button class="seg" data-act="q" data-q="' + esc(r) + '">' + esc(r) + "</button>";
+        }).join("") : '<span class="hint" style="font-size:13px;color:var(--muted)">최근 검색어가 없어요</span>') +
+        "</div></div>" +
+        '<div class="sect" style="border:none"><h4>지금 많이 찾아요</h4><div class="segmented">' +
+        ["전공서적","미니 냉장고","에어팟","과잠","계산기"].map(function(r){
+          return '<button class="seg" data-act="q" data-q="' + esc(r) + '">' + esc(r) + "</button>";
+        }).join("") + "</div></div>";
+    } else {
+      var list = filtered();
+      body = list.length
+        ? '<div class="toolbar"><span class="count">' + list.length + '개 찾았어요</span></div><div class="list">' + list.map(cardHTML).join("") + "</div>"
+        : '<div class="empty"><div class="ic">🫥</div><div class="h">‘' + esc(q) + '’ 검색 결과가 없어요</div>' +
+          '<div class="s">등록되면 알려 드릴까요?</div>' +
+          '<button class="act" data-act="keyword">알림 받기</button></div>';
+    }
+    return '<div class="appbar">' +
+        '<button class="iconbtn" data-act="back" aria-label="뒤로">‹</button>' +
+        '<div class="searchbar"><span>🔍</span><input id="q" type="text" value="' + esc(q) +
+          '" placeholder="물건 이름이나 과목명으로 찾아보세요" autocomplete="off"></div>' +
+        '<button class="iconbtn" data-act="doq" aria-label="검색 실행">↵</button>' +
+      "</div><div class='body'>" + body + "</div>";
+  }
+
+  /* ===================== 화면: 상세 ===================== */
+  function screenDetail(id){
+    var it = item(id);
+    if (!it) return "";
+    var c = cat(it.cat), sl = it.seller === "me" ? ME : seller(it.seller);
+    var liked = !!S.likes[it.id];
+    var mine = it.seller === "me";
+
+    var slides = "";
+    for (var i=0;i<3;i++) slides += '<div class="slide" style="--h:' + (c.h + i*4) + '">' + it.emo + "</div>";
+
+    var metaRows = "";
+    if (it.meta){
+      metaRows = '<div class="sect"><h4>교재 정보</h4>' +
+        Object.keys(it.meta).map(function(k){
+          return '<div class="kv"><span class="k">' + esc(k) + '</span><span class="v">' + esc(it.meta[k]) + "</span></div>";
+        }).join("") + "</div>";
+    }
+
+    var statusTag = it.status === "resv" ? '<span class="tag resv">예약중</span>' :
+                    it.status === "done" ? '<span class="tag done">거래완료</span>' : "";
+
+    var bar = mine
+      ? '<div class="bottombar">' +
+          '<button class="cta ghost" data-act="bump">끌어올리기</button>' +
+          '<button class="cta" data-act="status">상태 변경</button></div>'
+      : '<div class="bottombar">' +
+          '<button class="likebtn" data-act="like" aria-pressed="' + liked + '">' + (liked ? "❤️" : "🤍") + "</button>" +
+          (it.status === "done"
+            ? '<button class="cta" disabled>거래가 끝난 물건이에요</button>'
+            : '<button class="cta" data-act="chat">채팅하기</button>') +
+        "</div>";
+
+    return appbar("", {center:true, right:'<button class="iconbtn" data-act="more" aria-label="더보기">⋯</button>'}) +
+      '<div class="body">' +
+        '<div class="carousel" id="car">' + slides + "</div>" +
+        '<div class="dots" id="dots"><i class="on"></i><i></i><i></i></div>' +
+        '<button class="seller" data-act="profile" data-id="' + sl.id + '">' +
+          '<div class="avatar">' + sl.emo + "</div>" +
+          "<div><div class='n'>" + esc(sl.nick) + "</div><div class='c'>" + esc(sl.college) + "</div></div>" +
+          '<div class="trust"><div class="v">' + sl.trust + '</div><div class="l">신뢰 점수</div></div>' +
+        "</button>" +
+        '<div class="sect">' +
+          (statusTag ? '<div style="display:flex;gap:6px">' + statusTag + "</div>" : "") +
+          '<div class="detail-title">' + esc(it.title) + "</div>" +
+          '<div class="detail-meta">' + esc(cat(it.cat).name) + " · " + ago(it.mins) + " · 조회 " + it.views + "</div>" +
+          '<div class="detail-price' + (it.price===0?" free":"") + '">' + won(it.price) + "</div>" +
+        "</div>" +
+        '<div class="sect"><div class="desc">' + esc(it.desc) + "</div></div>" +
+        metaRows +
+        '<div class="sect"><h4>거래 장소</h4><div class="places">' +
+          it.places.map(function(p){ return '<span class="place">📍 ' + esc(p) + "</span>"; }).join("") +
+        "</div></div>" +
+        '<div class="sect" style="border:none">' +
+          '<div class="notice">캠퍼스 안 사람 많은 곳에서 직접 확인하고 거래하세요.<br>' +
+          "공강마켓은 거래 당사자가 아니며, 거래에 대한 책임을 지지 않습니다.</div>" +
+        "</div>" +
+      "</div>" + bar;
+  }
+
+  /* ===================== 화면: 등록 ===================== */
+  function screenRegister(){
+    if (S.verify < 2) return screenVerifyGate();
+    var d = S.draft || (S.draft = {photos:[], cat:"", title:"", price:"", desc:"", places:[], free:false, meta:{}});
+
+    var photos = d.photos.map(function(p,i){
+      return '<div class="photo" style="--h:' + p.h + '">' + p.emo +
+        '<button class="x" data-act="rmphoto" data-i="' + i + '" aria-label="사진 삭제">×</button>' +
+        (i===0 ? '<span class="rep">대표</span>' : "") + "</div>";
+    }).join("");
+
+    var catName = d.cat ? cat(d.cat).name : "";
+    var bookFields = d.cat === "book"
+      ? '<div class="field"><label>과목명 <span class="req">*</span></label>' +
+        '<input type="text" id="f-course" value="' + esc(d.meta.과목명 || "") + '" placeholder="예) 자료구조"></div>' +
+        '<div class="field"><label>교수명</label>' +
+        '<input type="text" id="f-prof" value="' + esc(d.meta.교수명 || "") + '" placeholder="선택"></div>'
+      : "";
+
+    /* 프리셋에 없는, 직접 입력한 장소 */
+    var customs = d.places.filter(function(p){ return PLACES.indexOf(p) < 0; });
+    var placeChips = PLACES.map(function(p){
+      return '<button class="seg" data-act="pick-place" data-p="' + esc(p) + '" aria-pressed="' +
+        (d.places.indexOf(p) >= 0) + '">' + esc(p) + "</button>";
+    }).join("") +
+    customs.map(function(p){
+      return '<button class="seg" data-act="pick-place" data-p="' + esc(p) + '" aria-pressed="true">' +
+        esc(p) + ' <span style="color:var(--muted);font-weight:400">×</span></button>';
+    }).join("") +
+    '<button class="seg" data-act="other-place" style="border:1px dashed var(--line-2);background:var(--bg);color:var(--ink-2)">＋ 기타 (직접 입력)</button>';
+
+    var ok = d.photos.length > 0 && d.cat && d.title.trim().length >= 2 && d.places.length > 0 && (d.free || String(d.price).length > 0);
+
+    return appbar("내 물건 팔기", {back:false, right:'<button class="iconbtn" data-act="cleardraft" aria-label="초기화">↺</button>'}) +
+      '<div class="body pad">' +
+        '<div class="field"><label>사진 <span class="req">*</span> <span style="color:var(--muted);font-weight:400">' + d.photos.length + "/10</span></label>" +
+          '<div class="photos">' +
+            '<button class="photo-add" data-act="addphoto">📷<span>추가</span></button>' + photos +
+          "</div>" +
+          '<div class="hint">첫 번째 사진이 대표 이미지가 돼요. (데모에서는 카테고리 아이콘이 들어갑니다)</div>' +
+        "</div>" +
+        '<div class="field"><label>카테고리 <span class="req">*</span></label>' +
+          '<button class="rowline" style="padding:2px 0;border:none" data-act="pickcat">' +
+            "<span" + (d.cat ? "" : ' style="color:var(--faint)"') + ">" + (catName || "카테고리를 선택하세요") + "</span>" +
+            '<span class="sub">›</span></button>' +
+        "</div>" +
+        '<div class="field"><label>제목 <span class="req">*</span></label>' +
+          '<input type="text" id="f-title" value="' + esc(d.title) + '" placeholder="예) 자료구조 교재 팝니다" maxlength="40">' +
+          '<div class="hint">' + d.title.length + "/40</div></div>" +
+        '<div class="field"><label>가격 <span class="req">*</span></label>' +
+          '<div style="display:flex;align-items:center;gap:10px">' +
+            '<input type="number" id="f-price" value="' + (d.free ? "" : esc(d.price)) + '" placeholder="0" ' + (d.free?"disabled":"") + '>' +
+            '<span style="font-size:15px;color:var(--muted)">원</span>' +
+          "</div>" +
+          '<div style="display:flex;align-items:center;gap:10px;margin-top:10px">' +
+            '<span style="font-size:14px;flex:1">나눔으로 올리기</span>' +
+            '<button class="switch" data-act="free" role="switch" aria-checked="' + d.free + '"></button>' +
+          "</div></div>" +
+        bookFields +
+        '<div class="field"><label>설명</label>' +
+          '<textarea id="f-desc" rows="4" placeholder="구입 시기, 사용 기간, 하자 여부를 적으면 더 빨리 팔려요.">' + esc(d.desc) + "</textarea></div>" +
+        '<div class="field"><label>거래 장소 <span class="req">*</span> <span style="color:var(--muted);font-weight:400">최대 3곳</span></label>' +
+          '<div class="segmented">' + placeChips + "</div>" +
+          '<div class="hint">찾는 곳이 없으면 기타를 눌러 직접 적을 수 있어요.</div>' +
+        "</div>" +
+      "</div>" +
+      '<div class="bottombar"><button class="cta" data-act="submit" ' + (ok ? "" : "disabled") + '>등록하기</button></div>';
+  }
+
+  function screenVerifyGate(){
+    return appbar("내 물건 팔기", {back:false}) +
+      '<div class="body"><div class="empty" style="padding-top:80px">' +
+        '<div class="ic">🎓</div>' +
+        '<div class="h">학생증 인증을 마치면 올릴 수 있어요</div>' +
+        '<div class="s">같은 학교 학생끼리만 거래하기 위해<br>재학생 확인이 필요해요.</div>' +
+        '<button class="act" data-act="verify">인증하러 가기</button>' +
+      "</div></div>";
+  }
+
+  /* ===================== 화면: 인증 ===================== */
+  function screenVerify(){
+    var s1done = S.verify >= 1;
+    var s2done = S.verify >= 2;
+
+    return appbar("학교 인증") +
+      '<div class="body pad"><div class="steps">' +
+        '<div class="step ' + (s1done ? "done" : "on") + '">' +
+          '<div class="no">' + (s1done ? "✓" : "1") + "</div>" +
+          '<div class="c"><div class="h">학교 이메일 인증</div>' +
+            '<div class="s">' + (s1done
+              ? "인증을 마쳤어요 · ha****@hankuk.ac.kr"
+              : "학교 메일로 인증코드를 보내드려요.") + "</div>" +
+            (s1done ? "" : '<button class="btn" data-act="sendmail">이메일 인증하기</button>') +
+          "</div></div>" +
+        '<div class="step ' + (s2done ? "done" : (s1done ? "on" : "")) + '">' +
+          '<div class="no">' + (s2done ? "✓" : "2") + "</div>" +
+          '<div class="c"><div class="h">학생증 확인</div>' +
+            '<div class="s">' + (s2done
+              ? "인증이 끝났어요. 이제 물건을 올릴 수 있어요."
+              : S.reviewing
+                ? "학생증을 확인하고 있어요. 보통 12시간 안에 끝나요."
+                : "학생증 사진을 보내주시면 운영자가 확인해요.") + "</div>" +
+            (s2done || !s1done ? "" :
+              (S.reviewing
+                ? '<button class="btn sub" data-act="cancelreview">제출 취소</button>'
+                : '<button class="btn" data-act="card">학생증 보내기</button>')) +
+          "</div></div>" +
+        "</div>" +
+        '<div class="grouplabel">지금 할 수 있는 것</div>' +
+        rowline("🔍", "매물 둘러보기", "가능") +
+        rowline("🤍", "찜하기", S.verify >= 1 ? "가능" : "인증 필요") +
+        rowline("💬", "채팅하기", S.verify >= 1 ? (S.verify >= 2 ? "가능" : "하루 3명까지") : "인증 필요") +
+        rowline("📦", "물건 올리기", S.verify >= 2 ? "가능" : "학생증 인증 필요") +
+      "</div>";
+  }
+  function rowline(ic, label, val){
+    return '<div class="rowline"><span style="font-size:18px">' + ic + "</span><span>" + esc(label) +
+      '</span><span class="sub">' + esc(val) + "</span></div>";
+  }
+
+  function screenCard(){
+    return appbar("학생증 보내기") +
+      '<div class="body pad">' +
+        '<div class="sect" style="border:none">' +
+          '<div class="notice" style="background:var(--sky-50);color:var(--sky-700)">' +
+            "<b>학교 · 이름 · 학번 · 유효기간</b>이 보이게 찍어 주세요.<br>" +
+            "얼굴과 주민번호 뒷자리는 가려 주세요.</div>" +
+        "</div>" +
+        '<div class="sect">' +
+          '<div style="aspect-ratio:1.58/1;border-radius:13px;background:linear-gradient(140deg,#EAF6FE,#C9E6F8);' +
+            'display:flex;flex-direction:column;justify-content:space-between;padding:16px;border:1px solid var(--sky-200)">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+              '<div style="font-size:12px;font-weight:700;color:var(--sky-700)">한국대학교 학생증</div>' +
+              '<div style="width:44px;height:52px;border-radius:6px;background:rgba(23,33,43,.72);display:grid;' +
+              'place-items:center;font-size:9px;color:#fff;text-align:center;line-height:1.3">가림<br>처리</div>' +
+            "</div>" +
+            '<div style="display:flex;flex-direction:column;gap:3px">' +
+              '<div style="font-size:16px;font-weight:700">한재석</div>' +
+              '<div style="font-size:12px;color:var(--sky-700)">공과대학 · 20251234</div>' +
+              '<div style="font-size:11px;color:var(--sky-600)">유효기간 2027-02-28</div>' +
+            "</div>" +
+          "</div>" +
+          '<div class="hint" style="margin-top:9px">데모용 견본 이미지입니다. 실제 앱에서는 촬영하거나 갤러리에서 고릅니다.</div>' +
+        "</div>" +
+        '<div class="sect" style="border:none">' +
+          '<button class="rowline" style="border:1px solid var(--line-2);border-radius:11px" data-act="masktool">' +
+            '<span style="font-size:18px">🖌️</span><span>얼굴·주민번호 가리기</span>' +
+            '<span class="sub" style="color:var(--green);font-weight:700">적용됨 ✓</span></button>' +
+        "</div>" +
+        '<div class="sect" style="border:none">' +
+          '<div class="notice">확인이 끝나면 사진은 바로 지워집니다. 따로 보관하지 않아요.</div>' +
+        "</div>" +
+      "</div>" +
+      '<div class="bottombar"><button class="cta" data-act="submitcard">이 사진으로 보내기</button></div>';
+  }
+
+  /* ===================== 화면: 채팅 ===================== */
+  function screenChats(){
+    if (!S.chats.length){
+      return appbar("채팅", {back:false}) +
+        '<div class="body"><div class="empty" style="padding-top:90px"><div class="ic">💬</div>' +
+        '<div class="h">아직 대화가 없어요</div>' +
+        '<div class="s">마음에 드는 물건에 말을 걸어보세요.</div>' +
+        '<button class="act" data-act="tohome">둘러보기</button></div></div>';
+    }
+    var rows = S.chats.map(function(c){
+      var it = item(c.itemId), sl = seller(c.withId);
+      var last = c.msgs[c.msgs.length-1];
+      return '<button class="row" data-act="room" data-id="' + c.id + '">' +
+        '<div class="avatar">' + sl.emo + "</div>" +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="top"><span class="nm">' + esc(sl.nick) + '</span>' +
+            '<span style="font-size:11.5px;color:var(--faint)">' + esc(sl.college) + "</span>" +
+            '<span class="tm">' + ago(last.m) + "</span></div>" +
+          '<div class="msg">' + esc(last.t) + "</div>" +
+        "</div>" +
+        (c.unread ? '<span class="unread">' + c.unread + "</span>" : "") +
+        '<div class="thumb" style="--h:' + cat(it.cat).h + ';width:44px;height:44px;font-size:20px;border-radius:8px">' + it.emo + "</div>" +
+      "</button>";
+    }).join("");
+    return appbar("채팅", {back:false}) + '<div class="body"><div class="chatlist">' + rows + "</div></div>";
+  }
+
+  function screenRoom(id){
+    var c = chat(id);
+    if (!c) return "";
+    var it = item(c.itemId), sl = seller(c.withId);
+    c.unread = 0;
+
+    var msgs = c.msgs.map(function(m){
+      if (m.sys) return '<div class="sysmsg">' + esc(m.t) + "</div>";
+      if (m.warn) return '<div class="warnmsg">⚠️ ' + esc(m.t) + "</div>";
+      return '<div class="bubble' + (m.me ? " me" : "") + '"><div class="b">' + esc(m.t) +
+        '</div><div class="tm">' + ago(m.m) + "</div></div>";
+    }).join("");
+
+    return appbar(sl.nick, {right:'<button class="iconbtn" data-act="roommore" aria-label="더보기">⋯</button>'}) +
+      '<div class="itembar">' +
+        '<div class="th" style="--h:' + cat(it.cat).h + '">' + it.emo + "</div>" +
+        '<div style="min-width:0"><div class="t">' + esc(it.title) + '</div><div class="p">' + won(it.price) + "</div></div>" +
+        '<button class="act" data-act="proposeplace">약속 잡기</button>' +
+      "</div>" +
+      '<div class="msgs" id="msgs">' + msgs + "</div>" +
+      '<div class="quick">' + QUICKS.map(function(q){
+        return '<button data-act="quick" data-q="' + esc(q) + '">' + esc(q) + "</button>";
+      }).join("") + "</div>" +
+      '<div class="composer">' +
+        '<div class="box"><input id="msg" type="text" placeholder="메시지 보내기" autocomplete="off"></div>' +
+        '<button class="send" data-act="send" aria-label="보내기">↑</button>' +
+      "</div>";
+  }
+
+  /* ===================== 화면: 내 정보 ===================== */
+  function screenMe(){
+    var mine = S.items.filter(function(i){ return i.seller === "me"; });
+    var liked = S.items.filter(function(i){ return S.likes[i.id]; });
+    var vLabel = S.verify >= 2 ? "인증 완료" : S.reviewing ? "심사 중" : S.verify === 1 ? "학생증 인증 필요" : "인증 필요";
+
+    return appbar("내 정보", {back:false, right:'<button class="iconbtn" data-act="settings" aria-label="설정">⚙️</button>'}) +
+      '<div class="body pad">' +
+        '<div class="prof"><div class="avatar av">' + ME.emo + "</div>" +
+          "<div><div class='nm'>" + esc(ME.nick) + "</div><div class='co'>" + esc(ME.college) + "</div></div></div>" +
+        '<div class="statrow">' +
+          '<div><div class="v">' + ME.trust + '</div><div class="l">신뢰 점수</div></div>' +
+          '<div><div class="v">' + mine.length + '</div><div class="l">판매 중</div></div>' +
+          '<div><div class="v">' + liked.length + '</div><div class="l">찜</div></div>' +
+        "</div>" +
+        '<div class="grouplabel">내 거래</div>' +
+        '<button class="rowline" data-act="myitems"><span style="font-size:18px">📦</span><span>내 매물</span>' +
+          '<span class="sub">' + mine.length + " ›</span></button>" +
+        '<button class="rowline" data-act="favs"><span style="font-size:18px">🤍</span><span>찜 목록</span>' +
+          '<span class="sub">' + liked.length + " ›</span></button>" +
+        '<button class="rowline" data-act="reviews"><span style="font-size:18px">⭐</span><span>받은 후기</span>' +
+          '<span class="sub">0 ›</span></button>' +
+        '<div class="grouplabel">계정</div>' +
+        '<button class="rowline" data-act="verify"><span style="font-size:18px">🎓</span><span>학교 인증</span>' +
+          '<span class="sub" style="color:' + (S.verify>=2 ? "var(--green)" : "var(--sky-600)") + ';font-weight:700">' + vLabel + " ›</span></button>" +
+        '<button class="rowline" data-act="settings"><span style="font-size:18px">🔔</span><span>알림 설정</span>' +
+          '<span class="sub">' + (S.notiOn ? "켜짐" : "꺼짐") + " ›</span></button>" +
+        '<div class="grouplabel">안내</div>' +
+        '<div class="rowline" style="color:var(--muted);font-size:13px;display:block;line-height:1.7">' +
+          "이 앱은 기획 문서를 바탕으로 만든 프로토타입입니다.<br>매물 · 판매자 · 대화는 모두 가상 데이터예요." +
+        "</div>" +
+      "</div>";
+  }
+
+  function screenList(title, list, emptyMsg){
+    return appbar(title) + '<div class="body">' +
+      (list.length ? '<div class="list">' + list.map(cardHTML).join("") + "</div>"
+        : '<div class="empty" style="padding-top:80px"><div class="ic">🗂️</div><div class="h">' + esc(emptyMsg) + "</div>" +
+          '<div class="s">홈에서 마음에 드는 물건을 찾아보세요.</div>' +
+          '<button class="act" data-act="tohome">둘러보기</button></div>') + "</div>";
+  }
+
+  function screenProfile(id){
+    var sl = id === "me" ? ME : seller(id);
+    var list = S.items.filter(function(i){ return i.seller === id && i.status !== "done"; });
+    return appbar("프로필", {right:'<button class="iconbtn" data-act="usermore" aria-label="더보기">⋯</button>'}) +
+      '<div class="body pad">' +
+        '<div class="prof"><div class="avatar av">' + sl.emo + "</div>" +
+          "<div><div class='nm'>" + esc(sl.nick) + "</div><div class='co'>" + esc(sl.college) + "</div></div></div>" +
+        '<div class="statrow">' +
+          '<div><div class="v">' + sl.trust + '</div><div class="l">신뢰 점수</div></div>' +
+          '<div><div class="v">' + sl.deals + '</div><div class="l">거래 횟수</div></div>' +
+          '<div><div class="v">' + list.length + '</div><div class="l">판매 중</div></div>' +
+        "</div>" +
+        '<div class="grouplabel">자주 받은 후기</div>' +
+        '<div class="sect" style="border:none"><div class="segmented">' +
+          '<span class="seg">시간 약속을 잘 지켜요 · 5</span><span class="seg">설명과 똑같아요 · 3</span>' +
+        "</div></div>" +
+        '<div class="grouplabel">판매 중인 물건</div>' +
+        (list.length ? '<div class="list">' + list.map(cardHTML).join("") + "</div>"
+          : '<div class="empty" style="padding:40px 30px"><div class="s">판매 중인 물건이 없어요.</div></div>') +
+      "</div>";
+  }
+
+  function screenSettings(){
+    return appbar("설정") + '<div class="body pad">' +
+      '<div class="grouplabel">알림</div>' +
+      settingRow("새 메시지", true) +
+      settingRow("찜한 물건 가격 인하", true) +
+      settingRow("인증 심사 결과", true) +
+      settingRow("약속 1시간 전 알림", true) +
+      settingRow("마케팅 · 이벤트", false) +
+      '<div class="grouplabel">야간 방해 금지</div>' +
+      settingRow("밤 10시~아침 8시 알림 끄기", true) +
+      '<div class="grouplabel">계정</div>' +
+      '<button class="rowline"><span>비밀번호 변경</span><span class="sub">›</span></button>' +
+      '<button class="rowline"><span>이용약관</span><span class="sub">›</span></button>' +
+      '<button class="rowline"><span>개인정보처리방침</span><span class="sub">›</span></button>' +
+      '<button class="rowline" data-act="logout" style="color:var(--red)"><span>로그아웃</span></button>' +
+      "</div>";
+  }
+  function settingRow(label, on){
+    return '<div class="rowline"><span>' + esc(label) + "</span>" +
+      '<span class="sub"><button class="switch" role="switch" aria-checked="' + on + '" data-act="toggle"></button></span></div>';
+  }
+
+  /* ===================== 렌더 ===================== */
+  function render(){
+    var cur = current(), html = "";
+    if (cur.name === "tab:home") html = screenHome();
+    else if (cur.name === "tab:sell") html = screenRegister();
+    else if (cur.name === "tab:chats") html = screenChats();
+    else if (cur.name === "tab:me") html = screenMe();
+    else if (cur.name === "search") html = screenSearch();
+    else if (cur.name === "detail") html = screenDetail(cur.param);
+    else if (cur.name === "verify") html = screenVerify();
+    else if (cur.name === "card") html = screenCard();
+    else if (cur.name === "room") html = screenRoom(cur.param);
+    else if (cur.name === "profile") html = screenProfile(cur.param);
+    else if (cur.name === "settings") html = screenSettings();
+    else if (cur.name === "myitems") html = screenList("내 매물", S.items.filter(function(i){return i.seller==="me";}), "아직 올린 물건이 없어요");
+    else if (cur.name === "favs") html = screenList("찜 목록", S.items.filter(function(i){return S.likes[i.id];}), "아직 찜한 물건이 없어요");
+    else if (cur.name === "reviews") html = appbar("받은 후기") +
+      '<div class="body"><div class="empty" style="padding-top:90px"><div class="ic">⭐</div>' +
+      '<div class="h">아직 받은 후기가 없어요</div><div class="s">거래를 마치면 후기가 쌓여요.</div></div></div>';
+
+    vp.innerHTML = '<div class="screen' + (S.stack.length ? " push" : "") + '">' + html + "</div>";
+    renderTabs();
+    afterRender(cur);
+  }
+
+  function renderTabs(){
+    var un = unreadTotal();
+    var tabs = [
+      {id:"home",  ic:"🏠", label:"홈"},
+      {id:"sell",  ic:"➕", label:"등록"},
+      {id:"chats", ic:"💬", label:"채팅", dot:un > 0},
+      {id:"me",    ic:"👤", label:"내 정보"}
+    ];
+    tabbar.innerHTML = tabs.map(function(t){
+      return '<button data-tab="' + t.id + '" aria-selected="' + (S.tab===t.id && !S.stack.length) + '">' +
+        '<span class="ic">' + t.ic + "</span>" + (t.dot ? '<span class="dot"></span>' : "") +
+        "<span>" + t.label + "</span></button>";
+    }).join("");
+  }
+
+  function afterRender(cur){
+    if (cur.name === "room"){
+      var m = document.getElementById("msgs");
+      if (m) m.scrollTop = m.scrollHeight;
+      var inp = document.getElementById("msg");
+      if (inp){
+        inp.addEventListener("keydown", function(e){ if (e.key === "Enter") sendMsg(); });
+      }
+    }
+    if (cur.name === "search"){
+      var q = document.getElementById("q");
+      if (q){
+        q.focus();
+        q.addEventListener("keydown", function(e){
+          if (e.key === "Enter"){ S.filter.q = q.value.trim(); pushRecent(S.filter.q); render(); }
+        });
+      }
+    }
+    if (cur.name === "detail"){
+      var car = document.getElementById("car"), dots = document.getElementById("dots");
+      if (car && dots){
+        car.addEventListener("scroll", function(){
+          var i = Math.round(car.scrollLeft / car.clientWidth);
+          [].forEach.call(dots.children, function(d, n){ d.className = n === i ? "on" : ""; });
+        });
+      }
+    }
+    /* 등록 폼 입력은 상태에 즉시 반영 — 리렌더로 값이 날아가지 않게 */
+    bindDraft("f-title", "title");
+    bindDraft("f-price", "price");
+    bindDraft("f-desc", "desc");
+    bindMeta("f-course", "과목명");
+    bindMeta("f-prof", "교수명");
+  }
+  function bindDraft(id, key){
+    var el = document.getElementById(id);
+    if (!el || !S.draft) return;
+    el.addEventListener("input", function(){
+      S.draft[key] = el.value;
+      var btn = document.querySelector('[data-act="submit"]');
+      if (btn) btn.disabled = !draftOK();
+      var hint = el.parentNode.querySelector(".hint");
+      if (id === "f-title" && hint) hint.textContent = el.value.length + "/40";
+    });
+  }
+  function bindMeta(id, key){
+    var el = document.getElementById(id);
+    if (!el || !S.draft) return;
+    el.addEventListener("input", function(){ S.draft.meta[key] = el.value; });
+  }
+  function draftOK(){
+    var d = S.draft;
+    return !!(d && d.photos.length && d.cat && d.title.trim().length >= 2 && d.places.length && (d.free || String(d.price).length));
+  }
+  function pushRecent(q){
+    if (!q) return;
+    S.recent = [q].concat(S.recent.filter(function(r){ return r !== q; })).slice(0,10);
+  }
+
+  /* ===================== 채팅 동작 ===================== */
+  function openChat(itemId){
+    var it = item(itemId);
+    var found = null;
+    S.chats.forEach(function(c){ if (c.itemId === itemId) found = c; });
+    if (!found){
+      found = {id:"c"+(S.chats.length+1), itemId:itemId, withId:it.seller, unread:0, msgs:[
+        {sys:true, t:"대화가 시작됐어요. 만나서 물건을 확인하고 거래하세요.", m:0}
+      ]};
+      S.chats.unshift(found);
+    }
+    S.tab = "chats"; S.stack = [{name:"room", param:found.id}];
+    render();
+  }
+
+  function sendMsg(text){
+    var cur = current();
+    if (cur.name !== "room") return;
+    var c = chat(cur.param);
+    var inp = document.getElementById("msg");
+    var t = (text !== undefined ? text : (inp ? inp.value : "")).trim();
+    if (!t) return;
+
+    c.msgs.push({me:true, t:t, m:0});
+    /* 선입금 유도 문구 감지 (SC-10) */
+    if (/계좌|입금|송금|선입금/.test(t)){
+      c.msgs.push({warn:true, t:"만나서 물건을 확인하기 전에 돈을 보내지 마세요."});
+    }
+    if (inp) inp.value = "";
+    render();
+
+    var typing = setTimeout(function(){
+      c.msgs.push({typing:true, me:false, t:"···", m:0});
+      render();
+    }, 400);
+
+    setTimeout(function(){
+      clearTimeout(typing);
+      c.msgs = c.msgs.filter(function(m){ return !m.typing; });
+      c.msgs.push({me:false, t:REPLIES[Math.floor(Math.random()*REPLIES.length)], m:0});
+      if (current().name === "room" && current().param === c.id) render();
+      else { c.unread++; renderTabs(); }
+    }, 1500);
+  }
+
+  /* ===================== 액션 ===================== */
+  var ACTS = {
+    back: back,
+    tohome: function(){ switchTab("home"); },
+    search: function(){ S.filter.q = ""; go("search"); },
+    doq: function(){
+      var q = document.getElementById("q");
+      S.filter.q = q ? q.value.trim() : ""; pushRecent(S.filter.q); render();
+    },
+    q: function(el){ S.filter.q = el.getAttribute("data-q"); pushRecent(S.filter.q); render(); },
+    keyword: function(){ toast("‘" + S.filter.q + "’ 매물이 올라오면 알려 드릴게요."); },
+    cat: function(el){ S.filter.cat = el.getAttribute("data-id"); render(); },
+    resetfilter: function(){
+      S.filter.cat = "all"; S.filter.freeOnly = false; S.filter.maxPrice = 0; render();
+    },
+    item: function(el){ go("detail", el.getAttribute("data-id")); },
+    profile: function(el){ go("profile", el.getAttribute("data-id")); },
+
+    sort: function(){
+      var opts = [["new","최신순"],["low","저가순"],["like","인기순"]];
+      sheet("<h3>정렬</h3>" + opts.map(function(o){
+        return '<button class="opt" data-act="setsort" data-v="' + o[0] + '" aria-selected="' +
+          (S.filter.sort===o[0]) + '">' + o[1] + (S.filter.sort===o[0] ? '<span class="ck">✓</span>' : "") + "</button>";
+      }).join(""));
+    },
+    setsort: function(el){ S.filter.sort = el.getAttribute("data-v"); closeOverlay(); render(); },
+
+    filter: function(){
+      sheet("<h3>필터</h3>" +
+        '<div class="sect2"><div style="font-size:12.5px;color:var(--muted);font-weight:700">가격</div>' +
+        '<div class="segmented">' +
+          [["0","전체"],["10000","1만원 이하"],["50000","5만원 이하"],["100000","10만원 이하"]].map(function(p){
+            return '<button class="seg" data-act="setprice" data-v="' + p[0] + '" aria-pressed="' +
+              (String(S.filter.maxPrice)===p[0]) + '">' + p[1] + "</button>";
+          }).join("") +
+        "</div></div>" +
+        '<button class="opt" data-act="togglefree" aria-selected="' + S.filter.freeOnly + '">나눔만 보기' +
+          (S.filter.freeOnly ? '<span class="ck">✓</span>' : "") + "</button>" +
+        '<div class="sect2"><button class="cta" data-act="closesheet">적용하기</button></div>');
+    },
+    setprice: function(el){ S.filter.maxPrice = parseInt(el.getAttribute("data-v"),10); ACTS.filter(); },
+    togglefree: function(){ S.filter.freeOnly = !S.filter.freeOnly; ACTS.filter(); },
+    closesheet: function(){ closeOverlay(); render(); },
+
+    noti: function(){
+      sheet("<h3>알림</h3>" +
+        '<button class="opt">💬 졸업준비생님이 메시지를 보냈어요<span class="ck" style="color:var(--muted);font-size:11px">3분 전</span></button>' +
+        '<button class="opt">🤍 찜한 ‘미니 냉장고’ 가격이 내려갔어요<span class="ck" style="color:var(--muted);font-size:11px">1시간 전</span></button>' +
+        '<button class="opt">🎓 학교 이메일 인증이 완료됐어요<span class="ck" style="color:var(--muted);font-size:11px">어제</span></button>');
+    },
+
+    like: function(el){
+      var id = current().param;
+      S.likes[id] = !S.likes[id];
+      toast(S.likes[id] ? "찜 목록에 담았어요" : "찜을 취소했어요");
+      render();
+    },
+    chat: function(){
+      if (S.verify < 1){ toast("학교 이메일 인증을 먼저 해주세요."); return; }
+      openChat(current().param);
+    },
+    more: function(){
+      sheet('<button class="opt" data-act="share">🔗 공유하기</button>' +
+        '<button class="opt danger" data-act="report">🚨 신고하기</button>' +
+        '<button class="opt danger" data-act="block">🚫 이 사용자 차단</button>');
+    },
+    usermore: function(){ ACTS.more(); },
+    roommore: function(){
+      sheet('<button class="opt" data-act="report">🚨 신고하기</button>' +
+        '<button class="opt danger" data-act="block">🚫 차단하기</button>' +
+        '<button class="opt danger" data-act="leave">채팅방 나가기</button>');
+    },
+    share: function(){ closeOverlay(); toast("링크를 복사했어요"); },
+    report: function(){
+      var reasons = ["사기","금지 품목","욕설·성희롱","허위 매물","노쇼","기타"];
+      sheet("<h3>신고 사유를 골라주세요</h3>" + reasons.map(function(r){
+        return '<button class="opt" data-act="doreport" data-r="' + esc(r) + '">' + r + "</button>";
+      }).join(""));
+    },
+    doreport: function(){
+      closeOverlay();
+      toast("신고를 받았어요. 24시간 안에 확인하고 결과를 알려 드릴게요.");
+    },
+    block: function(){
+      closeOverlay();
+      dialog("차단할까요?", "차단하면 서로의 물건과 대화가 보이지 않아요.", "차단", function(){
+        toast("차단했어요");
+      }, true);
+    },
+    leave: function(){
+      closeOverlay();
+      dialog("채팅방을 나갈까요?", "대화 내용이 모두 사라져요.", "나가기", function(){
+        var id = current().param;
+        S.chats = S.chats.filter(function(c){ return c.id !== id; });
+        back(); toast("채팅방을 나갔어요");
+      }, true);
+    },
+
+    status: function(){
+      var it = item(current().param);
+      sheet("<h3>상태 변경</h3>" +
+        '<button class="opt" data-act="setstatus" data-v="sale" aria-selected="' + (it.status==="sale") + '">판매중</button>' +
+        '<button class="opt" data-act="setstatus" data-v="resv" aria-selected="' + (it.status==="resv") + '">예약중</button>' +
+        '<button class="opt" data-act="setstatus" data-v="done" aria-selected="' + (it.status==="done") + '">거래완료</button>' +
+        '<button class="opt danger" data-act="delitem">매물 삭제</button>');
+    },
+    setstatus: function(el){
+      var v = el.getAttribute("data-v"), it = item(current().param);
+      closeOverlay();
+      if (v === "done"){
+        dialog("거래완료로 바꿀까요?", "거래완료로 바꾸면 되돌릴 수 없어요.", "거래완료", function(){
+          it.status = "done"; render();
+          toast("거래가 끝났어요. 후기를 남겨주세요.", "후기 쓰기", function(){
+            toast("평가 고마워요. 다음 사람에게 도움이 돼요.");
+          });
+        });
+      } else { it.status = v; render(); toast("상태를 바꿨어요"); }
+    },
+    delitem: function(){
+      closeOverlay();
+      dialog("매물을 삭제할까요?", "삭제하면 되돌릴 수 없어요.", "삭제", function(){
+        var id = current().param;
+        S.items = S.items.filter(function(i){ return i.id !== id; });
+        back(); toast("매물을 삭제했어요");
+      }, true);
+    },
+    bump: function(){
+      var it = item(current().param);
+      it.mins = 0; render(); toast("맨 위로 끌어올렸어요");
+    },
+
+    /* --- 인증 --- */
+    verify: function(){ closeOverlay(); go("verify"); },
+    sendmail: function(){
+      sheet("<h3>학교 이메일 인증</h3>" +
+        '<div class="sect2">' +
+          '<div style="font-size:13px;color:var(--muted);line-height:1.6">한국대학교 이메일로 인증코드를 보내드려요.</div>' +
+          '<div class="field" style="padding:12px 14px;border:1px solid var(--line-2);border-radius:11px">' +
+            '<label>학교 이메일</label>' +
+            '<div style="display:flex;align-items:center;gap:4px">' +
+              '<input type="text" id="mail" placeholder="아이디" style="flex:1">' +
+              '<span style="font-size:14px;color:var(--muted)">@hankuk.ac.kr</span></div>' +
+          "</div>" +
+          '<button class="cta" data-act="sendcode">인증코드 받기</button>' +
+        "</div>");
+      setTimeout(function(){ var m = document.getElementById("mail"); if (m) m.focus(); }, 60);
+    },
+    sendcode: function(){
+      var m = document.getElementById("mail");
+      if (!m || !m.value.trim()){ toast("이메일 아이디를 입력해 주세요."); return; }
+      sheet("<h3>인증코드를 보냈어요</h3>" +
+        '<div class="sect2">' +
+          '<div style="font-size:13px;color:var(--muted);line-height:1.6">' +
+            esc(m.value.trim()) + "@hankuk.ac.kr 로 6자리 코드를 보냈어요. (데모: 아무 6자리나 입력하세요)</div>" +
+          '<div class="field" style="padding:12px 14px;border:1px solid var(--line-2);border-radius:11px">' +
+            '<label>인증코드 <span style="color:var(--muted);font-weight:400">02:59</span></label>' +
+            '<input type="number" id="code" placeholder="6자리 숫자"></div>' +
+          '<button class="cta" data-act="confirmcode">확인</button>' +
+        "</div>");
+      setTimeout(function(){ var c = document.getElementById("code"); if (c) c.focus(); }, 60);
+    },
+    confirmcode: function(){
+      var c = document.getElementById("code");
+      if (!c || c.value.trim().length < 4){ toast("인증코드를 입력해 주세요."); return; }
+      closeOverlay();
+      S.verify = 1; render();
+      toast("학교 이메일 인증을 마쳤어요. 이제 찜하기와 채팅을 쓸 수 있어요.");
+    },
+    card: function(){ go("card"); },
+    masktool: function(){ toast("데모에서는 이미 가림 처리가 적용돼 있어요."); },
+    submitcard: function(){
+      S.reviewing = true;
+      back();
+      toast("잘 받았어요. 확인되면 알림으로 알려 드릴게요.");
+      /* 데모: 심사를 3초로 압축한다 */
+      setTimeout(function(){
+        S.reviewing = false; S.verify = 2;
+        render();
+        toast("인증이 끝났어요. 이제 물건을 올릴 수 있어요.");
+      }, 3200);
+    },
+    cancelreview: function(){ S.reviewing = false; render(); toast("제출을 취소했어요"); },
+
+    /* --- 등록 --- */
+    addphoto: function(){
+      var d = S.draft;
+      if (d.photos.length >= 10){ toast("사진은 10장까지 올릴 수 있어요."); return; }
+      var c = d.cat ? cat(d.cat) : CATS[1 + Math.floor(Math.random()*7)];
+      d.photos.push({emo:c.emo || "📦", h:c.h});
+      render();
+    },
+    rmphoto: function(el){
+      S.draft.photos.splice(parseInt(el.getAttribute("data-i"),10), 1); render();
+    },
+    pickcat: function(){
+      sheet("<h3>카테고리</h3>" + CATS.slice(1).map(function(c){
+        return '<button class="opt" data-act="setcat" data-v="' + c.id + '">' + c.emo + " " + c.name + "</button>";
+      }).join(""));
+    },
+    setcat: function(el){ S.draft.cat = el.getAttribute("data-v"); closeOverlay(); render(); },
+    free: function(){
+      S.draft.free = !S.draft.free;
+      if (S.draft.free) S.draft.price = "0";
+      render();
+    },
+    "pick-place": function(el){
+      var p = el.getAttribute("data-p"), d = S.draft, i = d.places.indexOf(p);
+      if (i >= 0) d.places.splice(i,1);
+      else if (d.places.length >= 3){ toast("거래 장소는 3곳까지 고를 수 있어요."); return; }
+      else d.places.push(p);
+      render();
+    },
+    "other-place": function(){
+      if (S.draft.places.length >= 3){ toast("거래 장소는 3곳까지 고를 수 있어요."); return; }
+      sheet("<h3>거래 장소 직접 입력</h3>" +
+        '<div class="sect2">' +
+          '<div style="font-size:13px;color:var(--muted);line-height:1.6">' +
+            "서로 찾기 쉬운 곳으로 적어주세요.</div>" +
+          '<div class="field" style="padding:12px 14px;border:1px solid var(--line-2);border-radius:11px">' +
+            '<label>장소 이름</label>' +
+            '<input type="text" id="np" maxlength="20" placeholder="예) 예술관 지하 카페 앞"></div>' +
+          '<div style="font-size:11.5px;color:var(--muted)">20자까지 쓸 수 있어요.</div>' +
+          '<button class="cta" data-act="add-place">추가하기</button>' +
+        "</div>");
+      setTimeout(function(){
+        var el2 = document.getElementById("np");
+        if (el2){
+          el2.focus();
+          el2.addEventListener("keydown", function(e){ if (e.key === "Enter") ACTS["add-place"](); });
+        }
+      }, 60);
+    },
+    "add-place": function(){
+      var el2 = document.getElementById("np");
+      if (!el2) return;
+      var v = el2.value.trim().replace(/\s+/g, " ");
+      var d = S.draft;
+      if (v.length < 2){ toast("장소 이름을 2자 이상 적어주세요."); return; }
+      if (d.places.indexOf(v) >= 0){ toast("이미 고른 장소예요."); return; }
+      d.places.push(v);
+      closeOverlay();
+      render();
+      toast("‘" + v + "’을(를) 거래 장소에 추가했어요");
+    },
+    cleardraft: function(){
+      dialog("작성 중인 내용을 지울까요?", "입력한 내용이 모두 사라져요.", "지우기", function(){
+        S.draft = null; render(); toast("작성 내용을 지웠어요");
+      }, true);
+    },
+    submit: function(){
+      var d = S.draft;
+      if (!draftOK()) return;
+      if (/대리출석|족보|대필|학생증\s*양도|주류|담배/.test(d.title + d.desc)){
+        toast("거래할 수 없는 품목이 포함돼 있어요.");
+        return;
+      }
+      var c = cat(d.cat);
+      S.items.unshift({
+        id:"n"+Date.now(), title:d.title.trim(), cat:d.cat,
+        price: d.free ? 0 : (parseInt(d.price,10) || 0),
+        seller:"me", mins:0, likes:0, emo:d.photos[0].emo,
+        desc:d.desc.trim() || "설명이 없어요.",
+        meta: d.cat === "book" && d.meta.과목명 ? d.meta : null,
+        places:d.places.slice(), status:"sale", views:0
+      });
+      S.draft = null;
+      switchTab("home");
+      toast("등록했어요. 채팅이 오면 알려 드릴게요.");
+    },
+
+    /* --- 채팅 --- */
+    room: function(el){ go("room", el.getAttribute("data-id")); },
+    send: function(){ sendMsg(); },
+    quick: function(el){ sendMsg(el.getAttribute("data-q")); },
+    proposeplace: function(){
+      var c = chat(current().param), it = item(c.itemId);
+      sheet("<h3>어디서 만날까요?</h3>" + it.places.map(function(p){
+        return '<button class="opt" data-act="doplace" data-p="' + esc(p) + '">📍 ' + esc(p) + "</button>";
+      }).join(""));
+    },
+    doplace: function(el){
+      var c = chat(current().param), p = el.getAttribute("data-p");
+      closeOverlay();
+      c.msgs.push({me:true, t:p + "에서 만날까요?", m:0});
+      render();
+      setTimeout(function(){
+        c.msgs.push({me:false, t:"네 좋아요!", m:0});
+        c.msgs.push({sys:true, t:p + "에서 오늘 오후 5시에 만나기로 했어요."});
+        if (current().name === "room") render();
+      }, 1200);
+    },
+
+    /* --- 내 정보 --- */
+    myitems: function(){ go("myitems"); },
+    favs: function(){ go("favs"); },
+    reviews: function(){ go("reviews"); },
+    settings: function(){ go("settings"); },
+    toggle: function(el){
+      var on = el.getAttribute("aria-checked") === "true";
+      el.setAttribute("aria-checked", String(!on));
+    },
+    logout: function(){
+      dialog("로그아웃할까요?", "데모에서는 처음 상태로 돌아가요.", "로그아웃", function(){
+        S.verify = 0; S.reviewing = false; S.likes = {}; switchTab("home");
+        toast("로그아웃했어요");
+      }, true);
+    }
+  };
+
+  /* ===================== 이벤트 ===================== */
+  document.getElementById("phone").addEventListener("click", function(e){
+    var el = e.target.closest ? e.target.closest("[data-act],[data-tab]") : null;
+    if (!el) return;
+    var tab = el.getAttribute("data-tab");
+    if (tab){ switchTab(tab); return; }
+    var act = el.getAttribute("data-act");
+    if (ACTS[act]) ACTS[act](el);
+  });
+
+  function tick(){
+    var d = new Date();
+    document.getElementById("clock").textContent =
+      d.getHours() + ":" + String(d.getMinutes()).padStart(2,"0");
+  }
+  tick(); setInterval(tick, 20000);
+
+  render();
+  setTimeout(function(){
+    toast("가상 데이터로 만든 시제품이에요. 마음껏 눌러보세요.");
+  }, 700);
+})();
+</script>
+</body>
+</html>
