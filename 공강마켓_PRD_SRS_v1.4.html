@@ -9,9 +9,6 @@
   img{max-width:100%;}
 </style>
 <title>공강마켓</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
   :root{
     --ground:#F1F4F0;
@@ -28,9 +25,10 @@
     --go-soft:#E2EFE7;
     --warn:#8A5A16;
     --warn-soft:#F6EBD8;
-    --display:"Gowun Batang",'Apple SD Gothic Neo',serif;
-    --body:"Noto Sans KR",'Apple SD Gothic Neo',sans-serif;
-    --mono:"IBM Plex Mono",ui-monospace,monospace;
+    /* 인터넷이 없어도 형태가 유지되도록 시스템 글꼴까지 폴백을 둔다 */
+    --display:"Gowun Batang","Nanum Myeongjo","Apple SD Gothic Neo",Batang,"바탕",serif;
+    --body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",system-ui,sans-serif;
+    --mono:"IBM Plex Mono",Consolas,"D2Coding",ui-monospace,monospace;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
