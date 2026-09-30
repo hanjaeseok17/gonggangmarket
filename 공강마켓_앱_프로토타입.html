@@ -6,6 +6,7 @@
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
   html{color-scheme:light dark;}
+  img{max-width:100%;}
 </style>
 <title>공강마켓 프로토타입</title>
 <style>
@@ -522,7 +523,7 @@
   }
   .step .btn.sub{background:var(--bg);color:var(--sky-600);border:1px solid var(--sky-200);}
 
-  /* ===== 가격 제안 / 크레딧 ===== */
+  /* ===== 가격 제안 ===== */
   .offer{
     display:flex;gap:11px;align-items:flex-start;
     padding:12px;border:1px solid var(--line-2);border-radius:5px;margin-bottom:8px;
@@ -1093,16 +1094,7 @@
      meta:{"과목명":"공학수학","교수명":"이상훈"}, pl:[0,3]}
   ];
 
-  /* 크레딧 충전 상품 — 기본 단가 1,000크레딧 = 1,000원 */
-  var PACKS = [
-    {id:"p1", credits:1000,  bonus:0,    won:1000,  label:"가볍게"},
-    {id:"p2", credits:3000,  bonus:300,  won:3000,  label:"자주 쓰면"},
-    {id:"p3", credits:10000, bonus:2000, won:10000, label:"제일 이득", best:true}
-  ];
-  var OFFER_COST = 10;    /* 제안이 수락돼 거래가 성사될 때 차감 — 보낼 때는 무료 */
-  var DEAL_REWARD = 100;  /* 거래완료 1건당 판매자 적립 */
-
-  /* 안전거래 수수료 — 구매자 부담, 2% (최소 500원) */
+  /* 수익은 안전거래 수수료 하나뿐이다. 가격 제안은 무료 */
   var FEE_RATE = 0.02, FEE_MIN = 500;
   function feeOf(p){ return Math.max(FEE_MIN, Math.round(p * FEE_RATE / 10) * 10); }
 
@@ -1134,36 +1126,10 @@
     recent:["자료구조","미니 냉장고","계산기"],
     draft:null,
     notiOn:true,
-    credits:50,
-    debt:0,
-    creditLog:[{t:"가입 축하 크레딧", n:50, m:2880}],
     offers:[],
     account:null,   /* {bank, num, holder} */
     escrows:[]      /* 안전거래 건 */
   };
-
-  /* 성사 수수료를 뗀다. 잔액이 모자라면 부족분을 미납으로 남긴다 */
-  function chargeDeal(label){
-    if (S.credits >= OFFER_COST){
-      S.credits -= OFFER_COST;
-      S.creditLog.unshift({t:"거래 성사 수수료 · " + label, n:-OFFER_COST, m:0});
-      return 0;
-    }
-    var short = OFFER_COST - S.credits;
-    if (S.credits > 0) S.creditLog.unshift({t:"거래 성사 수수료 · " + label, n:-S.credits, m:0});
-    S.credits = 0;
-    S.debt += short;
-    S.creditLog.unshift({t:"미납 " + short + "크레딧 발생", n:0, m:0});
-    return short;
-  }
-  /* 충전할 때 미납부터 갚는다 */
-  function settleDebt(){
-    if (!S.debt) return 0;
-    var pay = Math.min(S.debt, S.credits);
-    S.credits -= pay; S.debt -= pay;
-    if (pay) S.creditLog.unshift({t:"미납 정산", n:-pay, m:0});
-    return pay;
-  }
 
   SEED.forEach(function(s,i){
     S.items.push({
@@ -1262,6 +1228,7 @@
     lb.hidden = false;
 
     var sc = document.getElementById("lb-scroll");
+    if (!sc) return;
     sc.scrollLeft = sc.clientWidth * start;
     sc.addEventListener("scroll", function(){
       var i = Math.round(sc.scrollLeft / sc.clientWidth);
@@ -1542,8 +1509,7 @@
         "</div>";
     } else if (canOffer){
       myOffers = '<div class="sect"><div class="notice" style="background:var(--sky-50);color:var(--sky-700)">' +
-        "💰 이 물건은 <b>가격 제안</b>을 받고 있어요. 보내는 건 무료이고, 판매자가 수락해서 거래가 정해지면 " +
-        OFFER_COST + "크레딧을 받아요.</div></div>";
+        "💰 이 물건은 <b>가격 제안</b>을 받고 있어요. 사고 싶은 금액을 보내면 판매자가 수락하거나 거절해요.</div></div>";
     }
 
     return appbar("", {center:true, right:'<button class="iconbtn" data-act="more" aria-label="더보기">⋯</button>'}) +
@@ -1637,7 +1603,7 @@
           '<div style="display:flex;align-items:center;gap:10px">' +
             '<div style="flex:1"><label style="margin-bottom:3px">가격 제안 받기</label>' +
               '<div class="hint">켜두면 사는 사람이 원하는 금액을 보낼 수 있어요.<br>' +
-              "제안은 무료이고, 수락해서 거래가 정해지면 제안한 쪽이 " + OFFER_COST + "크레딧을 내요.</div></div>" +
+              "제안을 받아도 수락할지 말지는 판매자가 정해요.</div></div>" +
             '<button class="switch" data-act="toggleoffers" role="switch" aria-checked="' +
               (d.free ? false : d.offers) + '" ' + (d.free ? "disabled" : "") + "></button>" +
           "</div>" +
@@ -1829,8 +1795,6 @@
           '<div><div class="v">' + liked.length + '</div><div class="l">찜</div></div>' +
         "</div>" +
         '<div class="grouplabel">돈</div>' +
-        '<button class="rowline" data-act="credits"><span style="font-size:18px">🪙</span><span>내 크레딧</span>' +
-          '<span class="sub"><b style="color:var(--sky-600);font-size:15px">' + S.credits.toLocaleString("ko-KR") + "</b> ›</span></button>" +
         '<button class="rowline" data-act="bank"><span style="font-size:18px">🏦</span><span>정산 계좌</span>' +
           '<span class="sub">' + (S.account
             ? esc(S.account.bank) + " " + esc(maskAcc(S.account.num))
@@ -2068,45 +2032,6 @@
     return appbar("안전거래 내역") + '<div class="body"><div class="chatlist">' + rows + "</div></div>";
   }
 
-  function screenCredits(){
-    var sel = S.packSel || "p1";
-    var packs = PACKS.map(function(p){
-      return '<button class="pack" data-act="pickpack" data-v="' + p.id + '" aria-pressed="' + (sel===p.id) + '">' +
-        '<div class="c"><div class="n">' + (p.credits + p.bonus).toLocaleString("ko-KR") + "크레딧" +
-          (p.best ? '<span class="best">최다 적립</span>' : "") + "</div>" +
-          (p.bonus ? '<div class="b">기본 ' + p.credits.toLocaleString("ko-KR") + " + 보너스 " + p.bonus.toLocaleString("ko-KR") + "</div>"
-                   : '<div style="font-size:12px;color:var(--muted)">' + p.label + "</div>") +
-        "</div>" +
-        '<div class="w">' + p.won.toLocaleString("ko-KR") + "원</div></button>";
-    }).join("");
-
-    var log = S.creditLog.map(function(l){
-      return '<div class="ledger"><div class="t">' + esc(l.t) +
-        '<div class="d">' + ago(l.m) + "</div></div>" +
-        '<div class="n ' + (l.n > 0 ? "plus" : "minus") + '">' + (l.n > 0 ? "+" : "") + l.n.toLocaleString("ko-KR") + "</div></div>";
-    }).join("");
-
-    return appbar("내 크레딧") +
-      '<div class="body pad">' +
-        '<div class="wallet">' +
-          '<div class="l">쓸 수 있는 크레딧</div>' +
-          '<div class="v">' + S.credits.toLocaleString("ko-KR") + "</div>" +
-          (S.debt ? '<div class="s" style="background:rgba(0,0,0,.18);border-radius:8px;padding:6px 9px;margin-top:8px">' +
-            "⚠️ 못 낸 크레딧 " + S.debt + " · 충전하면 먼저 정산돼요</div>" : "") +
-          '<div class="s">제안 보내기는 무료 · 거래가 정해지면 ' + OFFER_COST + "크레딧 · 물건을 팔면 " + DEAL_REWARD + "크레딧 적립</div>" +
-        "</div>" +
-        '<div class="grouplabel">충전하기</div>' +
-        '<div style="padding:0 14px">' + packs + "</div>" +
-        '<div style="padding:4px 16px 10px">' +
-          '<div class="notice">1,000크레딧 = 1,000원. 크레딧은 공강마켓 이용 수수료로만 쓰여요.<br>' +
-            "<b>물건값은 크레딧과 아무 상관이 없어요.</b> 사고파는 돈은 만나서 직접 주고받습니다.<br>" +
-            "충전한 크레딧은 현금으로 돌려받을 수 없고, 마지막 사용일로부터 5년간 쓸 수 있어요.</div>" +
-        "</div>" +
-        '<div class="grouplabel">크레딧 내역</div>' + log +
-      "</div>" +
-      '<div class="bottombar"><button class="cta" data-act="pay">결제하기</button></div>';
-  }
-
   function screenSettings(){
     return appbar("설정") + '<div class="body pad">' +
       '<div class="grouplabel">알림</div>' +
@@ -2143,7 +2068,6 @@
     else if (cur.name === "room") html = screenRoom(cur.param);
     else if (cur.name === "profile") html = screenProfile(cur.param);
     else if (cur.name === "settings") html = screenSettings();
-    else if (cur.name === "credits") html = screenCredits();
     else if (cur.name === "bank") html = screenBank();
     else if (cur.name === "safepay") html = screenSafePay(cur.param);
     else if (cur.name === "escrow") html = screenEscrow(cur.param);
@@ -2397,12 +2321,10 @@
       var v = el.getAttribute("data-v"), it = item(current().param);
       closeOverlay();
       if (v === "done"){
-        dialog("거래완료로 바꿀까요?", "거래완료로 바꾸면 되돌릴 수 없어요. 거래를 마치면 " + DEAL_REWARD + "크레딧을 드려요.", "거래완료", function(){
+        dialog("거래완료로 바꿀까요?", "거래완료로 바꾸면 되돌릴 수 없어요.", "거래완료", function(){
           it.status = "done";
-          S.credits += DEAL_REWARD;
-          S.creditLog.unshift({t:"거래완료 적립 · " + it.title.slice(0,14), n:DEAL_REWARD, m:0});
           render();
-          toast("거래가 끝났어요. " + DEAL_REWARD + "크레딧을 드렸어요.", "후기 쓰기", function(){
+          toast("거래가 끝났어요. 후기를 남겨주세요.", "후기 쓰기", function(){
             toast("평가 고마워요. 다음 사람에게 도움이 돼요.");
           });
         });
@@ -2594,16 +2516,6 @@
     offer: function(){
       var it = item(current().param);
       if (S.verify < 1){ toast("학교 이메일 인증을 먼저 해주세요."); return; }
-      if (S.debt > 0){
-        sheet("<h3>못 낸 크레딧이 있어요</h3>" +
-          '<div class="sect2">' +
-            '<div style="font-size:13.5px;color:var(--ink-2);line-height:1.7">' +
-              "지난 거래의 성사 수수료 <b>" + S.debt + "크레딧</b>이 아직 남아 있어요.<br>" +
-              "충전해서 정산하면 다시 제안할 수 있어요.</div>" +
-            '<button class="cta" data-act="tocredits">충전하러 가기</button>' +
-          "</div>");
-        return;
-      }
       var sug = [0.9, 0.8, 0.7].map(function(r){
         return Math.max(1000, Math.round(it.price * r / 500) * 500);
       });
@@ -2622,12 +2534,10 @@
             '<label>메시지 <span style="color:var(--muted);font-weight:400">선택</span></label>' +
             '<input type="text" id="om" maxlength="40" placeholder="예) 오늘 바로 가져갈 수 있어요"></div>' +
           '<div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--ink-2)">' +
-            "<span>보내는 비용</span><span class='credit-chip' style='background:var(--green-soft);color:var(--green)'>무료</span></div>" +
-          '<div style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--muted)">' +
-            "<span>거래가 성사되면</span><span>" + OFFER_COST + "크레딧 · 남은 크레딧 " + S.credits.toLocaleString("ko-KR") + "</span></div>" +
+            "<span>제안 비용</span><span class='credit-chip' style='background:var(--green-soft);color:var(--green)'>무료</span></div>" +
           '<button class="cta" data-act="sendoffer">제안 보내기</button>' +
-          '<div style="font-size:11.5px;color:var(--muted);line-height:1.6">보낼 때는 크레딧이 들지 않아요. ' +
-            "판매자가 수락해서 거래가 정해지면 그때 " + OFFER_COST + "크레딧을 받아요. 거절되면 내지 않아요.</div>" +
+          '<div style="font-size:11.5px;color:var(--muted);line-height:1.6">제안은 몇 번이든 무료예요. ' +
+            "판매자가 수락하면 그 금액으로 거래가 정해져요.</div>" +
         "</div>");
       setTimeout(function(){ var o = document.getElementById("op"); if (o) o.focus(); }, 60);
     },
@@ -2655,11 +2565,11 @@
         S.chats.unshift(c);
       }
       c.msgs.push({me:true, t:"가격 제안 · " + price.toLocaleString("ko-KR") + "원" + (m && m.value.trim() ? "\n" + m.value.trim() : ""), m:0});
-      c.msgs.push({sys:true, t:"가격 제안을 보냈어요 · 수락되면 " + OFFER_COST + "크레딧을 받아요"});
+      c.msgs.push({sys:true, t:"가격 제안을 보냈어요"});
 
       S.tab = "chats"; S.stack = [{name:"room", param:c.id}];
       render();
-      toast("제안을 보냈어요. 보내는 건 무료예요.");
+      toast("제안을 보냈어요");
 
       /* 판매 희망가의 85% 이상이면 받아준다 */
       setTimeout(function(){
@@ -2667,13 +2577,7 @@
           c.msgs.push({me:false, t:"좋아요, 그 가격에 드릴게요!", m:0});
           c.msgs.push({sys:true, t:"판매자가 제안을 수락했어요 · " + price.toLocaleString("ko-KR") + "원"});
           it.status = "resv"; it.price = price;
-          var short = chargeDeal(it.title.slice(0,14));
-          c.msgs.push({sys:true, t:"거래가 정해져서 " + OFFER_COST + "크레딧을 받았어요. 물건값은 만나서 직접 주고받으세요."});
-          setTimeout(function(){
-            toast(short
-              ? "크레딧이 모자라 " + short + "크레딧이 미납으로 남았어요."
-              : OFFER_COST + "크레딧을 냈어요. 남은 크레딧 " + S.credits + "크레딧");
-          }, 300);
+          c.msgs.push({sys:true, t:"제안한 금액으로 거래가 정해졌어요 · " + price.toLocaleString("ko-KR") + "원"});
         } else {
           c.msgs.push({me:false, t:"죄송해요, 그 가격은 조금 어려울 것 같아요 🥲", m:0});
           c.msgs.push({sys:true, t:"판매자가 제안을 거절했어요"});
@@ -2849,51 +2753,6 @@
         if (current().name === "escrow") render();
         toast("확인 결과 환불 처리했어요. " + (e.price + e.fee).toLocaleString("ko-KR") + "원이 돌아갔어요.");
       }, 3200);
-    },
-
-    /* --- 크레딧 · 결제 --- */
-    credits: function(){ go("credits"); },
-    pickpack: function(el){ S.packSel = el.getAttribute("data-v"); render(); },
-    pay: function(){
-      var sel = S.packSel || "p1", p = null;
-      PACKS.forEach(function(x){ if (x.id === sel) p = x; });
-      sheet("<h3>결제하기</h3>" +
-        '<div class="sect2">' +
-          '<div style="display:flex;justify-content:space-between;font-size:14.5px">' +
-            "<span>" + (p.credits + p.bonus).toLocaleString("ko-KR") + "크레딧</span>" +
-            "<b>" + p.won.toLocaleString("ko-KR") + "원</b></div>" +
-          (p.bonus ? '<div style="font-size:12.5px;color:var(--green);font-weight:500">보너스 ' +
-            p.bonus.toLocaleString("ko-KR") + "크레딧 포함</div>" : "") +
-          '<div style="font-size:12.5px;color:var(--muted);font-weight:700;margin-top:6px">결제 수단</div>' +
-          '<button class="pack" data-act="pm" data-v="card" aria-pressed="true" style="margin:0">' +
-            '<span style="font-size:20px">💳</span><div class="c"><div class="n" style="font-size:14px">카드 간편결제</div>' +
-            '<div style="font-size:12px;color:var(--muted)">등록된 카드로 바로 결제</div></div></button>' +
-          '<button class="pack" data-act="pm" data-v="store" aria-pressed="false" style="margin:0">' +
-            '<span style="font-size:20px">🏬</span><div class="c"><div class="n" style="font-size:14px">앱스토어 인앱결제</div>' +
-            '<div style="font-size:12px;color:var(--muted)">App Store · Google Play 계정으로 결제</div></div></button>' +
-          '<button class="cta" data-act="dopay">' + p.won.toLocaleString("ko-KR") + "원 결제하기</button>" +
-          '<div style="font-size:11.5px;color:var(--muted);line-height:1.6">데모라서 실제 결제는 일어나지 않아요. ' +
-            "쓰지 않은 크레딧은 7일 안에 청약철회로 환불받을 수 있어요.</div>" +
-        "</div>");
-    },
-    pm: function(el){
-      [].forEach.call(document.querySelectorAll('[data-act="pm"]'), function(b){
-        b.setAttribute("aria-pressed", String(b === el));
-      });
-    },
-    dopay: function(){
-      var sel = S.packSel || "p1", p = null;
-      PACKS.forEach(function(x){ if (x.id === sel) p = x; });
-      closeOverlay();
-      toast("결제하고 있어요…");
-      setTimeout(function(){
-        var total = p.credits + p.bonus;
-        S.credits += total;
-        S.creditLog.unshift({t:"크레딧 충전 · " + p.won.toLocaleString("ko-KR") + "원", n:total, m:0});
-        var paid = settleDebt();
-        render();
-        toast(total.toLocaleString("ko-KR") + "크레딧을 충전했어요" + (paid ? " · 미납 " + paid + "크레딧 정산" : ""));
-      }, 1100);
     },
 
     /* --- 내 정보 --- */
