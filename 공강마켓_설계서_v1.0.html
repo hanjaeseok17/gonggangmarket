@@ -1,0 +1,1133 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{color-scheme:light dark;}
+  img{max-width:100%;}
+</style>
+<title>공강마켓 설계서</title>
+<style>
+  :root{
+    --ground:#F1F4F0; --surface:#FFFFFF; --sunken:#E7ECE6;
+    --line:#D3DBD2; --line-soft:#E3E9E2;
+    --ink:#19211D; --ink-2:#3C4A42; --muted:#63736A;
+    --accent:#1F5D7A; --accent-soft:#E2EDF2;
+    --go:#2F6B4F; --go-soft:#E2EFE7;
+    --warn:#8A5A16; --warn-soft:#F6EBD8;
+    --code-bg:#12211F; --code-ink:#D6E4DE;
+    --display:"Gowun Batang","Nanum Myeongjo","Apple SD Gothic Neo",Batang,"바탕",serif;
+    --body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",system-ui,sans-serif;
+    --mono:Consolas,"D2Coding","IBM Plex Mono",ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#121714; --surface:#191F1B; --sunken:#1F2621;
+      --line:#2F3A33; --line-soft:#252E28;
+      --ink:#E7EDE8; --ink-2:#C2CEC5; --muted:#93A399;
+      --accent:#7FB8D4; --accent-soft:#1B2830;
+      --go:#7FC3A0; --go-soft:#1B2A22;
+      --warn:#D9AE6A; --warn-soft:#2A2418;
+      --code-bg:#0D1614; --code-ink:#C8DAD3;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#121714; --surface:#191F1B; --sunken:#1F2621;
+    --line:#2F3A33; --line-soft:#252E28;
+    --ink:#E7EDE8; --ink-2:#C2CEC5; --muted:#93A399;
+    --accent:#7FB8D4; --accent-soft:#1B2830;
+    --go:#7FC3A0; --go-soft:#1B2A22;
+    --warn:#D9AE6A; --warn-soft:#2A2418;
+    --code-bg:#0D1614; --code-ink:#C8DAD3;
+  }
+
+  body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.75;}
+  .shell{max-width:1180px;margin:0 auto;padding:0 20px 96px;display:grid;
+    grid-template-columns:220px minmax(0,1fr);gap:44px;align-items:start;}
+  @media (max-width:920px){.shell{grid-template-columns:minmax(0,1fr);gap:24px;}}
+
+  .cover{grid-column:1/-1;border-bottom:1px solid var(--line);padding:56px 0 32px;
+    display:flex;flex-direction:column;gap:18px;}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;color:var(--accent);text-transform:uppercase;}
+  .cover h1{font-family:var(--display);font-size:clamp(36px,6vw,58px);font-weight:700;line-height:1.08;letter-spacing:-.01em;}
+  .cover .lede{font-size:17px;color:var(--ink-2);max-width:64ch;line-height:1.7;}
+  .meta{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:3px;background:var(--surface);width:fit-content;}
+  .meta div{padding:9px 18px;border-right:1px solid var(--line-soft);display:flex;flex-direction:column;gap:1px;}
+  .meta div:last-child{border-right:none;}
+  .meta dt{font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-family:var(--mono);}
+  .meta dd{font-size:13.5px;font-weight:500;}
+
+  nav.toc{position:sticky;top:24px;font-size:13px;border-left:2px solid var(--line);padding-left:14px;
+    display:flex;flex-direction:column;gap:1px;}
+  nav.toc b{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);font-weight:500;padding-bottom:8px;}
+  nav.toc a{color:var(--ink-2);text-decoration:none;padding:3px 0;line-height:1.45;}
+  nav.toc a:hover{color:var(--accent);}
+  nav.toc a .n{font-family:var(--mono);font-size:11px;color:var(--muted);margin-right:7px;}
+  @media (max-width:920px){nav.toc{position:static;border-left:none;border-top:1px solid var(--line);padding:16px 0 0;
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2px 16px;}}
+
+  main{min-width:0;display:flex;flex-direction:column;gap:52px;padding-top:44px;}
+  section{scroll-margin-top:20px;display:flex;flex-direction:column;gap:16px;}
+  h2{font-family:var(--display);font-size:27px;font-weight:700;line-height:1.3;padding-bottom:9px;
+    border-bottom:1px solid var(--line);text-wrap:balance;}
+  h2 .n{font-family:var(--mono);font-size:13px;color:var(--accent);margin-right:12px;font-weight:500;}
+  h3{font-size:16px;font-weight:700;margin-top:12px;}
+  h4{font-size:14px;font-weight:700;color:var(--ink-2);margin-top:6px;}
+  p{max-width:70ch;color:var(--ink-2);}
+  main ul,main ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:70ch;color:var(--ink-2);}
+  li::marker{color:var(--muted);}
+  strong{color:var(--ink);font-weight:700;}
+  code{font-family:var(--mono);font-size:.88em;background:var(--sunken);padding:1px 5px;border-radius:3px;color:var(--ink);}
+
+  pre{background:var(--code-bg);color:var(--code-ink);border-radius:4px;padding:16px 18px;overflow-x:auto;
+    font-family:var(--mono);font-size:12.5px;line-height:1.72;}
+  pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+  pre .c{color:#7E9A90;}
+  pre .k{color:#8FC8E8;}
+  pre .s{color:#C7D89B;}
+  pre .f{color:#E8C48C;}
+
+  .scroller{overflow-x:auto;border:1px solid var(--line);border-radius:3px;background:var(--surface);}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:560px;}
+  caption{text-align:left;font-size:12px;color:var(--muted);padding:0 0 7px;font-family:var(--mono);letter-spacing:.05em;}
+  th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--line-soft);vertical-align:top;line-height:1.55;}
+  thead th{background:var(--sunken);font-size:11.5px;letter-spacing:.09em;color:var(--muted);font-weight:500;white-space:nowrap;}
+  tbody tr:last-child td{border-bottom:none;}
+  td.id,th.id{font-family:var(--mono);font-size:12px;white-space:nowrap;color:var(--accent);}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap;}
+
+  .callout{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:0 3px 3px 0;padding:16px 20px;display:flex;flex-direction:column;gap:9px;}
+  .callout.go{border-left-color:var(--go);}
+  .callout.warn{border-left-color:var(--warn);}
+  .callout h3{margin:0;font-size:14.5px;}
+  .callout p,.callout ul{font-size:13.5px;max-width:66ch;}
+
+  .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1px;
+    background:var(--line-soft);border:1px solid var(--line);border-radius:3px;overflow:hidden;}
+  .rules > div{background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:6px;}
+  .rules .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;color:var(--accent);}
+  .rules .t{font-size:14.5px;font-weight:700;line-height:1.4;}
+  .rules .d{font-size:12.5px;color:var(--muted);line-height:1.6;}
+
+  figure{background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:22px 20px 16px;overflow-x:auto;}
+  figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+  figcaption{font-size:12px;color:var(--muted);padding-top:14px;margin-top:14px;border-top:1px solid var(--line-soft);text-align:center;}
+  .b-box{fill:var(--surface);stroke:var(--line);}
+  .b-a{fill:var(--accent-soft);stroke:var(--accent);}
+  .b-g{fill:var(--go-soft);stroke:var(--go);}
+  .t-m{fill:var(--ink);font-family:var(--body);font-size:12px;font-weight:500;}
+  .t-s{fill:var(--muted);font-family:var(--body);font-size:10.5px;}
+  .ar{stroke:var(--muted);fill:none;}
+
+  .tree{background:var(--code-bg);color:var(--code-ink);border-radius:4px;padding:16px 18px;overflow-x:auto;
+    font-family:var(--mono);font-size:12.5px;line-height:1.85;white-space:pre;}
+  .tree i{color:#7E9A90;font-style:normal;}
+
+  footer{grid-column:1/-1;border-top:1px solid var(--line);margin-top:64px;padding-top:20px;
+    font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 24px;}
+  a{color:var(--accent);}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <header class="cover">
+    <span class="eyebrow">Architecture &amp; Design · v1.0</span>
+    <h1>공강마켓 설계서</h1>
+    <p class="lede">현재 HTML 프로토타입이 보여주는 동작을 그대로 안드로이드 앱과 Cloudflare 백엔드로 옮기기 위한 설계다. 목표는 기능을 만드는 것이 아니라 <strong>바뀌어도 무너지지 않는 구조</strong>를 만드는 것이다.</p>
+    <dl class="meta">
+      <div><dt>대상</dt><dd>Android · Kotlin</dd></div>
+      <div><dt>백엔드</dt><dd>Cloudflare Workers</dd></div>
+      <div><dt>기준 명세</dt><dd>프로토타입 + PRD v1.5</dd></div>
+      <div><dt>작성일</dt><dd>2026-09-30</dd></div>
+    </dl>
+  </header>
+
+  <nav class="toc">
+    <b>목차</b>
+    <a href="#s1"><span class="n">01</span>설계 원칙</a>
+    <a href="#s2"><span class="n">02</span>전체 구조</a>
+    <a href="#s3"><span class="n">03</span>경량 헥사고날</a>
+    <a href="#s4"><span class="n">04</span>모듈과 폴더</a>
+    <a href="#s5"><span class="n">05</span>도메인 모델</a>
+    <a href="#s6"><span class="n">06</span>포트 목록</a>
+    <a href="#s7"><span class="n">07</span>유스케이스</a>
+    <a href="#s8"><span class="n">08</span>의존성 주입</a>
+    <a href="#s9"><span class="n">09</span>UI 계층</a>
+    <a href="#s10"><span class="n">10</span>백엔드 설계</a>
+    <a href="#s11"><span class="n">11</span>API 계약</a>
+    <a href="#s12"><span class="n">12</span>TDD 전략</a>
+    <a href="#s13"><span class="n">13</span>테스트 케이스</a>
+    <a href="#s14"><span class="n">14</span>다국어 설계</a>
+    <a href="#s15"><span class="n">15</span>구현 순서</a>
+    <a href="#s16"><span class="n">16</span>결정과 미결</a>
+  </nav>
+
+  <main>
+
+    <!-- 01 -->
+    <section id="s1">
+      <h2><span class="n">01</span>설계 원칙</h2>
+      <p>아래 다섯 가지는 구현 중 예외 없이 지킨다. 코드 리뷰에서 이 원칙을 어긴 변경은 반려한다.</p>
+
+      <div class="rules">
+        <div><span class="k">RULE 1</span><span class="t">의존은 안쪽으로만 흐른다</span><span class="d">도메인은 아무것도 모른다. 안드로이드 SDK, 네트워크, DB, JSON 라이브러리를 도메인에서 import하는 순간 설계가 무너진다.</span></div>
+        <div><span class="k">RULE 2</span><span class="t">바깥은 인터페이스로만 만난다</span><span class="d">DB·HTTP·시계·랜덤·파일까지 전부 포트(interface)로 뚫는다. 구현은 어댑터에만 둔다.</span></div>
+        <div><span class="k">RULE 3</span><span class="t">테스트를 먼저 쓴다</span><span class="d">실패하는 테스트 → 통과하는 최소 구현 → 정리. 도메인과 유스케이스는 예외 없이 이 순서를 따른다.</span></div>
+        <div><span class="k">RULE 4</span><span class="t">문구는 코드에 넣지 않는다</span><span class="d">사용자에게 보이는 모든 문자열은 리소스 키로만 존재한다. 서버는 문구가 아니라 코드를 내려준다.</span></div>
+        <div><span class="k">RULE 5</span><span class="t">새 기능은 파일 추가로 끝낸다</span><span class="d">기능을 하나 더할 때 기존 파일을 여러 개 고쳐야 한다면 구조가 잘못된 것이다. 추가는 새 유스케이스 + 새 어댑터로.</span></div>
+      </div>
+
+      <h3>1.1 왜 이 원칙인가</h3>
+      <p>이 앱에서 바뀔 것이 거의 확실한 부분은 이미 드러나 있다. 과금 구조는 이미 세 번 바뀌었고(크레딧 도입 → 과금 시점 변경 → 크레딧 폐지), 거래 방식은 직거래에서 안전거래·문고리로 늘었다. 학교는 한 곳에서 여러 곳으로 늘어날 예정이고, 언어도 늘어난다.</p>
+      <p><strong>공통점은 전부 "바깥"이 바뀐다는 것</strong>이다. 물건을 팔고 사는 핵심 규칙은 그대로인데 결제 수단, 저장소, 화면, 언어가 바뀐다. 그래서 핵심을 가운데 두고 바깥을 갈아끼우는 구조를 쓴다.</p>
+
+      <div class="callout warn">
+        <h3>이 설계가 방어하는 실제 사고</h3>
+        <ul>
+          <li>수수료율을 2%에서 3%로 바꿨는데 화면 다섯 곳을 고쳐야 하는 상황 → 정책은 도메인 한 곳에만 둔다</li>
+          <li>D1 용량 한계로 Postgres로 옮겨야 하는 상황 → 저장소는 포트 뒤에 있어 어댑터만 교체한다</li>
+          <li>영어를 추가하려는데 하드코딩된 한국어가 200곳에서 나오는 상황 → 린트로 컴파일 단계에서 막는다</li>
+          <li>결제 로직을 고쳤는데 어디가 깨졌는지 모르는 상황 → 도메인 테스트가 1초 안에 알려준다</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 02 -->
+    <section id="s2">
+      <h2><span class="n">02</span>전체 구조</h2>
+
+      <figure>
+        <svg viewBox="0 0 700 290" role="img" aria-label="시스템 구성도">
+          <rect class="b-a" x="12" y="60" width="150" height="130" rx="3" stroke-width="1"/>
+          <text class="t-m" x="87" y="84" text-anchor="middle">Android 앱</text>
+          <text class="t-s" x="87" y="104" text-anchor="middle">Kotlin · Compose</text>
+          <text class="t-s" x="87" y="122" text-anchor="middle">Hilt · Coroutines</text>
+          <text class="t-s" x="87" y="146" text-anchor="middle">도메인 / 유스케이스</text>
+          <text class="t-s" x="87" y="164" text-anchor="middle">+ 어댑터</text>
+
+          <path class="ar" d="M162 110 H214" stroke-width="1"/>
+          <path class="ar" d="M208 105 l7 5 -7 5" stroke-width="1"/>
+          <text class="t-s" x="188" y="100" text-anchor="middle">HTTPS</text>
+          <path class="ar" d="M162 140 H214" stroke-width="1"/>
+          <path class="ar" d="M208 135 l7 5 -7 5" stroke-width="1"/>
+          <text class="t-s" x="188" y="160" text-anchor="middle">WebSocket</text>
+
+          <rect class="b-box" x="216" y="46" width="168" height="158" rx="3" stroke-width="1"/>
+          <text class="t-m" x="300" y="70" text-anchor="middle">Cloudflare Worker</text>
+          <text class="t-s" x="300" y="90" text-anchor="middle">Hono · TypeScript</text>
+          <rect class="b-box" x="230" y="104" width="140" height="30" rx="2" stroke-width="1"/>
+          <text class="t-s" x="300" y="123" text-anchor="middle">유스케이스 / 포트</text>
+          <rect class="b-box" x="230" y="142" width="140" height="30" rx="2" stroke-width="1"/>
+          <text class="t-s" x="300" y="161" text-anchor="middle">어댑터</text>
+          <text class="t-s" x="300" y="192" text-anchor="middle">Wrangler로 배포</text>
+
+          <path class="ar" d="M384 80 H436" stroke-width="1"/>
+          <path class="ar" d="M430 75 l7 5 -7 5" stroke-width="1"/>
+          <rect class="b-g" x="438" y="60" width="118" height="40" rx="3" stroke-width="1"/>
+          <text class="t-m" x="497" y="78" text-anchor="middle">D1</text>
+          <text class="t-s" x="497" y="93" text-anchor="middle">SQLite · 주 저장소</text>
+
+          <path class="ar" d="M384 122 H436" stroke-width="1"/>
+          <path class="ar" d="M430 117 l7 5 -7 5" stroke-width="1"/>
+          <rect class="b-g" x="438" y="104" width="118" height="40" rx="3" stroke-width="1"/>
+          <text class="t-m" x="497" y="122" text-anchor="middle">R2</text>
+          <text class="t-s" x="497" y="137" text-anchor="middle">이미지 · 학생증</text>
+
+          <path class="ar" d="M384 164 H436" stroke-width="1"/>
+          <path class="ar" d="M430 159 l7 5 -7 5" stroke-width="1"/>
+          <rect class="b-g" x="438" y="148" width="118" height="40" rx="3" stroke-width="1"/>
+          <text class="t-m" x="497" y="166" text-anchor="middle">Durable Object</text>
+          <text class="t-s" x="497" y="181" text-anchor="middle">채팅방 1개 = 1객체</text>
+
+          <path class="ar" d="M556 80 H600" stroke-width="1" stroke-dasharray="3 3"/>
+          <rect class="b-box" x="602" y="60" width="86" height="40" rx="3" stroke-width="1"/>
+          <text class="t-s" x="645" y="78" text-anchor="middle">Queues</text>
+          <text class="t-s" x="645" y="93" text-anchor="middle">푸시 발송</text>
+
+          <path class="ar" d="M556 122 H600" stroke-width="1" stroke-dasharray="3 3"/>
+          <rect class="b-box" x="602" y="104" width="86" height="40" rx="3" stroke-width="1"/>
+          <text class="t-s" x="645" y="122" text-anchor="middle">외부</text>
+          <text class="t-s" x="645" y="137" text-anchor="middle">FCM · PG · 메일</text>
+
+          <text class="t-s" x="12" y="240">앱과 서버가 같은 구조(헥사고날)를 쓴다. 언어는 다르지만 레이어 이름과 의존 규칙이 같아,</text>
+          <text class="t-s" x="12" y="258">한쪽을 이해하면 다른 쪽도 읽힌다. 도메인 규칙은 서버가 최종 판정하고 앱은 화면을 위해 같은 규칙을 복제한다.</text>
+          <text class="t-s" x="12" y="276">이미지는 서명 URL로 R2에 직접 올려 Worker를 거치지 않는다.</text>
+        </svg>
+        <figcaption>그림 1. 시스템 구성. 초록은 Cloudflare 관리형 저장소, 점선은 비동기 경로.</figcaption>
+      </figure>
+
+      <div class="scroller">
+        <table>
+          <caption>기술 선택과 근거</caption>
+          <thead><tr><th>영역</th><th>선택</th><th>근거</th></tr></thead>
+          <tbody>
+            <tr><td>앱 언어</td><td>Kotlin 2.x</td><td>순수 JVM 모듈로 도메인을 분리할 수 있어 헥사고날과 궁합이 좋다. 도메인 테스트가 안드로이드 없이 밀리초 단위로 돈다</td></tr>
+            <tr><td>UI</td><td>Jetpack Compose</td><td>상태를 함수의 입력으로 받는 구조라 화면 테스트가 쉽다. 프로토타입의 선언적 구조와도 대응이 자연스럽다</td></tr>
+            <tr><td>DI</td><td>Hilt (Dagger)</td><td>컴파일 타임에 의존 그래프를 검증한다. Koin은 빠르지만 오류가 실행 시점에 드러난다</td></tr>
+            <tr><td>비동기</td><td>Coroutines + Flow</td><td>표준. 포트 시그니처를 <code>suspend</code>로 두면 테스트에서 동기 실행으로 바꿔 끼울 수 있다</td></tr>
+            <tr><td>로컬 DB</td><td>Room</td><td>오프라인 목록 캐시용. 어댑터 안에만 존재한다</td></tr>
+            <tr><td>서버</td><td>Workers + Hono</td><td>Wrangler로 이미 배포 경험이 있다. Hono는 미들웨어가 얇아 유스케이스를 가릴 일이 없다</td></tr>
+            <tr><td>서버 DB</td><td>D1 (SQLite)</td><td>Worker와 같은 엣지에서 돌아 지연이 작고 운영이 없다. 파일럿 규모에 충분하다. 한계에 닿으면 어댑터만 바꾼다</td></tr>
+            <tr><td>실시간</td><td>Durable Objects</td><td>채팅방 하나가 객체 하나. 순서 보장과 연결 관리를 플랫폼이 해준다</td></tr>
+            <tr><td>이미지</td><td>R2 + 서명 URL</td><td>업로드가 Worker를 거치지 않아 CPU 시간을 쓰지 않는다</td></tr>
+            <tr><td>서버 테스트</td><td>Vitest + workers pool</td><td>모의 런타임이 아니라 실제 workerd에서 돈다. D1·R2·DO가 그대로 동작한다</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 03 -->
+    <section id="s3">
+      <h2><span class="n">03</span>경량 헥사고날</h2>
+      <p>정통 헥사고날은 레이어가 많고 파일이 불어난다. 학생 프로젝트 규모에서는 그 비용이 이득보다 크다. 그래서 <strong>세 겹만 쓴다.</strong></p>
+
+      <figure>
+        <svg viewBox="0 0 660 260" role="img" aria-label="레이어 구조">
+          <rect class="b-box" x="12" y="18" width="636" height="224" rx="3" stroke-width="1"/>
+          <text class="t-s" x="28" y="40">Adapters — 바깥세상. 갈아끼울 수 있는 것</text>
+
+          <rect class="b-box" x="28" y="52" width="120" height="48" rx="2" stroke-width="1"/>
+          <text class="t-s" x="88" y="72" text-anchor="middle">UI</text>
+          <text class="t-s" x="88" y="88" text-anchor="middle">Compose · ViewModel</text>
+          <rect class="b-box" x="156" y="52" width="120" height="48" rx="2" stroke-width="1"/>
+          <text class="t-s" x="216" y="72" text-anchor="middle">Network</text>
+          <text class="t-s" x="216" y="88" text-anchor="middle">Ktor · DTO</text>
+          <rect class="b-box" x="284" y="52" width="120" height="48" rx="2" stroke-width="1"/>
+          <text class="t-s" x="344" y="72" text-anchor="middle">Storage</text>
+          <text class="t-s" x="344" y="88" text-anchor="middle">Room · DataStore</text>
+          <rect class="b-box" x="412" y="52" width="120" height="48" rx="2" stroke-width="1"/>
+          <text class="t-s" x="472" y="72" text-anchor="middle">Platform</text>
+          <text class="t-s" x="472" y="88" text-anchor="middle">시계 · 권한 · FCM</text>
+          <rect class="b-box" x="540" y="52" width="92" height="48" rx="2" stroke-width="1"/>
+          <text class="t-s" x="586" y="72" text-anchor="middle">I18n</text>
+          <text class="t-s" x="586" y="88" text-anchor="middle">문구 해석</text>
+
+          <path class="ar" d="M88 100 V124" stroke-width="1"/><path class="ar" d="M83 118 l5 7 5 -7" stroke-width="1"/>
+          <path class="ar" d="M216 100 V124" stroke-width="1"/><path class="ar" d="M211 118 l5 7 5 -7" stroke-width="1"/>
+          <path class="ar" d="M344 100 V124" stroke-width="1"/><path class="ar" d="M339 118 l5 7 5 -7" stroke-width="1"/>
+          <path class="ar" d="M472 100 V124" stroke-width="1"/><path class="ar" d="M467 118 l5 7 5 -7" stroke-width="1"/>
+          <path class="ar" d="M586 100 V124" stroke-width="1"/><path class="ar" d="M581 118 l5 7 5 -7" stroke-width="1"/>
+
+          <rect class="b-a" x="28" y="126" width="604" height="48" rx="2" stroke-width="1"/>
+          <text class="t-m" x="330" y="146" text-anchor="middle">Application — 유스케이스와 포트</text>
+          <text class="t-s" x="330" y="163" text-anchor="middle">"무엇을 하는가"를 순서대로 적은 곳. 바깥은 인터페이스로만 부른다</text>
+
+          <path class="ar" d="M330 174 V196" stroke-width="1"/><path class="ar" d="M325 190 l5 7 5 -7" stroke-width="1"/>
+
+          <rect class="b-g" x="152" y="198" width="356" height="32" rx="2" stroke-width="1"/>
+          <text class="t-m" x="330" y="219" text-anchor="middle">Domain — 규칙과 상태. 아무것도 import하지 않는다</text>
+        </svg>
+        <figcaption>그림 2. 세 겹 구조. 화살표는 의존 방향이며 역방향은 금지한다.</figcaption>
+      </figure>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>겹</th><th>있는 것</th><th>없는 것</th><th>테스트</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Domain</strong></td><td>엔티티, 값 객체, 상태 전이, 계산(수수료·가격 검증), 정책</td><td>안드로이드, 네트워크, DB, 코루틴, 날짜 <em>획득</em>, 로깅</td><td>순수 JUnit. 가장 많고 가장 빠르다</td></tr>
+            <tr><td><strong>Application</strong></td><td>유스케이스, 포트 인터페이스, 트랜잭션 경계</td><td>프레임워크, DTO, SQL, Compose</td><td>가짜 포트(Fake)를 끼워 시나리오 검증</td></tr>
+            <tr><td><strong>Adapters</strong></td><td>ViewModel, Compose, Ktor 클라이언트, Room DAO, Hilt 모듈</td><td>비즈니스 규칙 — 여기에 <code>if</code>가 쌓이면 도메인으로 옮긴다</td><td>계약 테스트 · 화면 테스트 · 통합 테스트</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>3.1 의존 방향을 기계로 강제한다</h3>
+      <p>규칙은 사람이 지키면 반드시 깨진다. Gradle 모듈 경계와 정적 분석으로 막는다.</p>
+      <pre><code><span class="c">// domain 모듈의 build.gradle.kts — 안드로이드 플러그인이 아예 없다</span>
+<span class="k">plugins</span> { <span class="s">kotlin("jvm")</span> }
+<span class="k">dependencies</span> {
+  <span class="c">// 의존성 없음. kotlin-stdlib 뿐이다.</span>
+  testImplementation(<span class="s">"org.junit.jupiter:junit-jupiter"</span>)
+}
+
+<span class="c">// Konsist로 규칙을 테스트로 고정한다 (ArchitectureTest.kt)</span>
+<span class="f">@Test</span>
+<span class="k">fun</span> `도메인은 안드로이드를 모른다`() {
+  Konsist.scopeFromModule(<span class="s">"domain"</span>)
+    .files
+    .assertFalse { it.hasImport { i -> i.name.startsWith(<span class="s">"android"</span>) } }
+}
+
+<span class="f">@Test</span>
+<span class="k">fun</span> `유스케이스는 어댑터를 모른다`() {
+  Konsist.scopeFromModule(<span class="s">"application"</span>)
+    .files
+    .assertFalse { it.hasImport { i -> i.name.contains(<span class="s">".adapter."</span>) } }
+}</code></pre>
+      <p>이 두 테스트가 CI에서 돌면 원칙 1·2는 사람이 기억할 필요가 없어진다. <strong>규칙을 문서가 아니라 테스트로 옮기는 것</strong>이 이 설계의 핵심 장치다.</p>
+    </section>
+
+    <!-- 04 -->
+    <section id="s4">
+      <h2><span class="n">04</span>모듈과 폴더</h2>
+
+      <h3>4.1 안드로이드</h3>
+      <div class="tree">gonggang-android/
+├── domain/                  <i># 순수 Kotlin(JVM). 의존성 0</i>
+│   └── src/main/kotlin/market/gonggang/domain/
+│       ├── item/            <i># Item, ItemStatus, Price, Category</i>
+│       ├── offer/           <i># Offer, OfferPolicy (24시간 3회)</i>
+│       ├── escrow/          <i># Escrow, EscrowStatus, FeePolicy</i>
+│       ├── user/            <i># User, VerifyLevel, TrustScore</i>
+│       ├── chat/            <i># ChatRoom, Message</i>
+│       └── shared/          <i># Money, Instant 래퍼, Result 타입</i>
+│
+├── application/             <i># 유스케이스 + 포트. 순수 Kotlin + coroutines</i>
+│   └── .../application/
+│       ├── port/
+│       │   ├── out/         <i># ItemRepository, EscrowGateway, Clock ...</i>
+│       │   └── in/          <i># 유스케이스 인터페이스(선택)</i>
+│       └── usecase/
+│           ├── item/        <i># ObserveItems, PublishItem, BumpItem</i>
+│           ├── offer/       <i># SendOffer, AcceptOffer</i>
+│           ├── escrow/      <i># StartEscrow, MarkDelivered, ConfirmPurchase</i>
+│           └── verify/      <i># RequestEmailCode, SubmitStudentCard</i>
+│
+├── adapter-network/         <i># Ktor 클라이언트, DTO, 매퍼</i>
+├── adapter-storage/         <i># Room, DataStore</i>
+├── adapter-platform/        <i># 시계, FCM, 이미지 선택, 권한</i>
+├── ui/                      <i># Compose 화면, ViewModel, 디자인 시스템</i>
+├── i18n/                    <i># 문구 키 정의, 포매터</i>
+└── app/                     <i># Application, Hilt 모듈, 네비게이션, 조립만</i></div>
+
+      <div class="callout">
+        <h3>모듈을 나누는 이유는 빌드 속도가 아니다</h3>
+        <p><code>domain</code>이 별도 모듈이면 <strong>안드로이드 코드를 물리적으로 import할 수 없다</strong>. 같은 모듈 안에서 폴더만 나누면 누군가 언젠가 반드시 <code>android.content.Context</code>를 끌어온다. 모듈 경계는 규칙을 컴파일러에게 맡기는 장치다.</p>
+      </div>
+
+      <h3>4.2 백엔드</h3>
+      <div class="tree">gonggang-worker/
+├── src/
+│   ├── domain/              <i># 앱과 같은 규칙을 TypeScript로</i>
+│   │   ├── item.ts          <i># 상태 전이, 불변식</i>
+│   │   ├── offer.ts
+│   │   ├── escrow.ts        <i># 수수료 계산, 상태 머신</i>
+│   │   └── money.ts
+│   ├── application/
+│   │   ├── ports.ts         <i># 인터페이스만 모아둔 파일</i>
+│   │   └── usecase/
+│   ├── adapter/
+│   │   ├── d1/              <i># SQL은 여기에만 존재한다</i>
+│   │   ├── r2/
+│   │   ├── do/              <i># ChatRoom Durable Object</i>
+│   │   ├── push/            <i># FCM</i>
+│   │   └── pg/              <i># 결제사</i>
+│   ├── http/                <i># Hono 라우터 = 얇은 껍데기</i>
+│   │   ├── routes/
+│   │   └── error.ts         <i># 도메인 오류 → HTTP 코드 변환</i>
+│   ├── container.ts         <i># 의존성 조립 (수동 DI)</i>
+│   └── index.ts             <i># fetch 핸들러</i>
+├── migrations/              <i># D1 스키마 마이그레이션</i>
+├── test/
+│   ├── domain/              <i># 순수 단위 테스트</i>
+│   ├── usecase/             <i># Fake 어댑터</i>
+│   └── integration/         <i># 실제 D1/R2/DO 위에서</i>
+└── wrangler.jsonc</div>
+    </section>
+
+    <!-- 05 -->
+    <section id="s5">
+      <h2><span class="n">05</span>도메인 모델</h2>
+      <p>도메인은 <strong>불변 데이터 + 순수 함수</strong>로 쓴다. 상태를 바꾸는 대신 새 상태를 반환하면, 테스트가 입력과 출력만 비교하면 끝나고 동시성 문제도 사라진다.</p>
+
+      <h3>5.1 상태 전이를 타입으로 고정한다</h3>
+      <pre><code><span class="c">// domain/escrow/Escrow.kt</span>
+<span class="k">enum class</span> EscrowStatus { PAID, PLACED, CONFIRMED, DISPUTED, REFUNDED }
+
+<span class="k">data class</span> Escrow(
+  <span class="k">val</span> id: EscrowId,
+  <span class="k">val</span> itemId: ItemId,
+  <span class="k">val</span> buyerId: UserId,
+  <span class="k">val</span> sellerId: UserId,
+  <span class="k">val</span> price: Money,
+  <span class="k">val</span> fee: Money,
+  <span class="k">val</span> way: DeliveryWay,
+  <span class="k">val</span> status: EscrowStatus,
+  <span class="k">val</span> placedAt: Instant? = <span class="k">null</span>
+) {
+  <span class="c">// 전이는 전부 메서드로. 바깥에서 status를 직접 대입할 수 없다</span>
+  <span class="k">fun</span> markPlaced(at: Instant, proof: DropProof?): Result&lt;Escrow&gt; =
+    <span class="k">when</span> {
+      status != PAID -&gt; fail(EscrowError.NotPayable)
+      way == DeliveryWay.DROP &amp;&amp; proof == <span class="k">null</span> -&gt; fail(EscrowError.ProofRequired)
+      <span class="k">else</span> -&gt; ok(copy(status = PLACED, placedAt = at))
+    }
+
+  <span class="k">fun</span> confirm(): Result&lt;Escrow&gt; =
+    <span class="k">if</span> (status != PLACED) fail(EscrowError.NotConfirmable)
+    <span class="k">else</span> ok(copy(status = CONFIRMED))
+
+  <span class="k">fun</span> autoConfirmDue(): Instant? = placedAt?.plus(AUTO_CONFIRM)
+
+  <span class="k">companion object</span> { <span class="k">val</span> AUTO_CONFIRM: Duration = 7.days }
+}</code></pre>
+
+      <div class="callout go">
+        <h3>이 형태가 주는 것</h3>
+        <ul>
+          <li><strong>불가능한 상태를 만들 수 없다</strong> — 결제되지 않은 거래를 확정하는 코드는 컴파일은 되지만 <code>Result.failure</code>를 반환하고, 테스트가 그것을 고정한다</li>
+          <li><strong>규칙이 한 곳에 있다</strong> — "7일 자동 확정"이 화면·서버·알림 세 곳에 흩어지지 않는다</li>
+          <li><strong>테스트가 1줄이다</strong> — <code>escrow.confirm()</code>에 상태만 바꿔가며 호출하면 전이표 전체를 덮는다</li>
+        </ul>
+      </div>
+
+      <h3>5.2 값 객체로 단위 사고를 막는다</h3>
+      <pre><code><span class="c">// 원과 크레딧, 원과 퍼센트를 섞어 쓰다 생기는 사고를 타입으로 막는다</span>
+<span class="k">@JvmInline value class</span> Money <span class="k">private constructor</span>(<span class="k">val</span> won: Long) {
+  <span class="k">operator fun</span> plus(o: Money) = Money(won + o.won)
+  <span class="k">fun</span> percent(p: Int) = Money(won * p / 100)
+  <span class="k">fun</span> atLeast(m: Money) = <span class="k">if</span> (won &lt; m.won) m <span class="k">else this</span>
+  <span class="k">companion object</span> {
+    <span class="k">val</span> ZERO = Money(0)
+    <span class="k">fun</span> won(v: Long): Result&lt;Money&gt; =
+      <span class="k">if</span> (v &lt; 0 || v &gt; 5_000_000) fail(PriceError.OutOfRange) <span class="k">else</span> ok(Money(v))
+  }
+}
+
+<span class="c">// 수수료 정책도 도메인에 둔다. 바뀌는 건 이 파일 하나뿐이다</span>
+<span class="k">object</span> FeePolicy {
+  <span class="k">private const val</span> RATE = 2
+  <span class="k">private val</span> MIN = Money.won(500).getOrThrow()
+  <span class="k">fun</span> of(price: Money): Money = price.percent(RATE).atLeast(MIN)
+}</code></pre>
+
+      <h3>5.3 핵심 엔티티</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>엔티티</th><th>불변식 (테스트로 고정)</th></tr></thead>
+          <tbody>
+            <tr><td><code>Item</code></td><td>가격 0~5,000,000 · 제목 2~40자 · 거래 장소 1~3곳 · 나눔이면 제안·안전결제 불가 · 거래완료는 최종 상태</td></tr>
+            <tr><td><code>Offer</code></td><td>제안가 &lt; 희망가 · 100원 이상 · 같은 매물 24시간 3회 · 수락 시 나머지 대기 제안 자동 거절</td></tr>
+            <tr><td><code>Escrow</code></td><td>PAID→PLACED→CONFIRMED 단방향 · 전달 전만 취소 가능 · 확정은 되돌릴 수 없음 · 문고리는 증빙 사진 필수</td></tr>
+            <tr><td><code>User</code></td><td>VerifyLevel 0→1→2 단방향(만료 제외) · 등급별 허용 행위 · 학기 재인증 만료</td></tr>
+            <tr><td><code>ChatRoom</code></td><td>(매물, 구매자) 쌍에 방 하나 · 차단 시 읽기 전용</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 06 -->
+    <section id="s6">
+      <h2><span class="n">06</span>포트 목록</h2>
+      <p>포트는 <strong>도메인 언어로</strong> 쓴다. <code>getItemsFromApi()</code>가 아니라 <code>observeItems()</code>다. 이름에 기술이 들어가는 순간 구현을 바꿀 때 이름부터 거짓말이 된다.</p>
+
+      <div class="scroller">
+        <table>
+          <caption>출력 포트 (application/port/out)</caption>
+          <thead><tr><th class="id">포트</th><th>주요 시그니처</th><th>실제 구현</th><th>테스트 대역</th></tr></thead>
+          <tbody>
+            <tr><td class="id">ItemRepository</td><td><code>observeItems(filter): Flow&lt;List&lt;Item&gt;&gt;</code><br><code>suspend find(id): Item?</code><br><code>suspend save(item)</code></td><td>Ktor + Room 캐시</td><td>메모리 리스트 Fake</td></tr>
+            <tr><td class="id">OfferGateway</td><td><code>suspend send(itemId, price, msg): Result&lt;Offer&gt;</code><br><code>suspend respond(offerId, accept)</code></td><td>Ktor</td><td>호출 기록 Fake</td></tr>
+            <tr><td class="id">EscrowGateway</td><td><code>suspend start(itemId, way): Result&lt;Escrow&gt;</code><br><code>suspend confirm(id)</code></td><td>Ktor</td><td>시나리오 Fake</td></tr>
+            <tr><td class="id">ChatGateway</td><td><code>observe(roomId): Flow&lt;Message&gt;</code><br><code>suspend send(roomId, text)</code></td><td>WebSocket</td><td>채널 기반 Fake</td></tr>
+            <tr><td class="id">SessionStore</td><td><code>observeSession(): Flow&lt;Session?&gt;</code><br><code>suspend save/clear</code></td><td>DataStore(암호화)</td><td>메모리</td></tr>
+            <tr><td class="id">ImageUploader</td><td><code>suspend upload(bytes): Result&lt;ImageKey&gt;</code></td><td>R2 서명 URL</td><td>즉시 성공/실패 Fake</td></tr>
+            <tr><td class="id">Clock</td><td><code>now(): Instant</code></td><td>시스템 시계</td><td><strong>고정 시계</strong> — 만료·자동확정 테스트의 핵심</td></tr>
+            <tr><td class="id">IdGenerator</td><td><code>next(): String</code></td><td>UUID v7</td><td>순번 발급 Fake</td></tr>
+            <tr><td class="id">Notifier</td><td><code>suspend push(event)</code></td><td>FCM</td><td>수집 Fake</td></tr>
+            <tr><td class="id">Analytics</td><td><code>track(event)</code></td><td>수집 SDK</td><td>No-op</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <h3>Clock과 IdGenerator를 포트로 두는 이유</h3>
+        <p><code>System.currentTimeMillis()</code>와 <code>UUID.randomUUID()</code>는 테스트를 비결정적으로 만드는 가장 흔한 원인이다. "7일 뒤 자동 확정", "24시간 내 3회 제한", "10분 뒤 코드 만료" 같은 규칙은 <strong>시계를 주입할 수 없으면 테스트할 방법이 없다</strong>. 처음부터 포트로 둔다.</p>
+      </div>
+    </section>
+
+    <!-- 07 -->
+    <section id="s7">
+      <h2><span class="n">07</span>유스케이스</h2>
+      <p>유스케이스는 클래스 하나에 공개 함수 하나다. 이름이 곧 사용자의 의도이고, 파일 하나를 열면 그 기능의 전부가 보인다.</p>
+
+      <pre><code><span class="c">// application/usecase/escrow/ConfirmPurchase.kt</span>
+<span class="k">class</span> ConfirmPurchase <span class="f">@Inject constructor</span>(
+  <span class="k">private val</span> escrows: EscrowGateway,
+  <span class="k">private val</span> items: ItemRepository,
+  <span class="k">private val</span> notifier: Notifier,
+  <span class="k">private val</span> clock: Clock
+) {
+  <span class="k">suspend operator fun</span> invoke(id: EscrowId): Result&lt;Escrow&gt; {
+    <span class="k">val</span> escrow = escrows.find(id) ?: <span class="k">return</span> fail(EscrowError.NotFound)
+    <span class="k">val</span> confirmed = escrow.confirm().getOrElse { <span class="k">return</span> fail(it) }  <span class="c">// 규칙은 도메인이</span>
+    escrows.save(confirmed)                                          <span class="c">// 저장은 포트가</span>
+    items.markSold(confirmed.itemId)
+    notifier.push(Event.Settled(confirmed.sellerId, confirmed.price))
+    <span class="k">return</span> ok(confirmed)
+  }
+}</code></pre>
+
+      <p>유스케이스에 <code>if (status == ...)</code> 같은 판단이 들어가면 도메인으로 내린다. 유스케이스가 하는 일은 <strong>순서를 정하는 것</strong>이지 규칙을 아는 것이 아니다.</p>
+
+      <div class="scroller">
+        <table>
+          <caption>유스케이스 목록 — 프로토타입 화면과 1:1 대응</caption>
+          <thead><tr><th>영역</th><th>유스케이스</th><th>대응 화면</th></tr></thead>
+          <tbody>
+            <tr><td rowspan="4">탐색</td><td><code>ObserveItems</code></td><td>홈 목록</td></tr>
+            <tr><td><code>ObserveHotItems</code></td><td>인기 매물 (찜 상위 6)</td></tr>
+            <tr><td><code>SearchItems</code></td><td>검색</td></tr>
+            <tr><td><code>ToggleFavorite</code></td><td>하트</td></tr>
+            <tr><td rowspan="3">매물</td><td><code>PublishItem</code></td><td>등록</td></tr>
+            <tr><td><code>ChangeItemStatus</code></td><td>상태 변경</td></tr>
+            <tr><td><code>BumpItem</code></td><td>끌어올리기</td></tr>
+            <tr><td rowspan="2">제안</td><td><code>SendOffer</code></td><td>가격 제안 시트</td></tr>
+            <tr><td><code>RespondToOffer</code></td><td>받은 제안 수락·거절</td></tr>
+            <tr><td rowspan="5">안전거래</td><td><code>StartEscrow</code></td><td>안전결제</td></tr>
+            <tr><td><code>MarkDelivered</code></td><td>물건 뒀어요 / 건넸어요</td></tr>
+            <tr><td><code>ConfirmPurchase</code></td><td>구매 확정</td></tr>
+            <tr><td><code>CancelEscrow</code></td><td>결제 취소</td></tr>
+            <tr><td><code>RaiseDispute</code></td><td>문제가 있어요</td></tr>
+            <tr><td rowspan="3">인증</td><td><code>RequestEmailCode</code> / <code>ConfirmEmailCode</code></td><td>1단계</td></tr>
+            <tr><td><code>SubmitStudentCard</code></td><td>2단계</td></tr>
+            <tr><td><code>ObserveVerifyState</code></td><td>인증 센터</td></tr>
+            <tr><td rowspan="2">채팅</td><td><code>OpenChatRoom</code> / <code>SendMessage</code></td><td>채팅방</td></tr>
+            <tr><td><code>ProposeMeeting</code></td><td>약속 잡기</td></tr>
+            <tr><td>계좌</td><td><code>RegisterBankAccount</code></td><td>정산 계좌</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 08 -->
+    <section id="s8">
+      <h2><span class="n">08</span>의존성 주입</h2>
+
+      <h3>8.1 안드로이드 — Hilt</h3>
+      <p>바인딩은 <strong>어댑터 모듈이 소유</strong>한다. <code>app</code> 모듈은 조립만 하고, 새 어댑터가 생겨도 <code>app</code>을 고치지 않는다.</p>
+      <pre><code><span class="c">// adapter-network/di/NetworkModule.kt</span>
+<span class="f">@Module @InstallIn</span>(SingletonComponent::<span class="k">class</span>)
+<span class="k">abstract class</span> NetworkModule {
+  <span class="f">@Binds @Singleton</span>
+  <span class="k">abstract fun</span> itemRepository(impl: RemoteItemRepository): ItemRepository
+
+  <span class="k">companion object</span> {
+    <span class="f">@Provides @Singleton</span>
+    <span class="k">fun</span> httpClient(session: SessionStore): HttpClient = HttpClient(OkHttp) { ... }
+  }
+}
+
+<span class="c">// adapter-platform/di/PlatformModule.kt</span>
+<span class="f">@Module @InstallIn</span>(SingletonComponent::<span class="k">class</span>)
+<span class="k">object</span> PlatformModule {
+  <span class="f">@Provides</span> <span class="k">fun</span> clock(): Clock = SystemClock
+  <span class="f">@Provides</span> <span class="k">fun</span> ids(): IdGenerator = UuidV7Generator
+}</code></pre>
+
+      <h3>8.2 테스트에서 바꿔 끼우기</h3>
+      <pre><code><span class="c">// 계측 테스트에서 네트워크 전체를 가짜로 교체한다</span>
+<span class="f">@UninstallModules</span>(NetworkModule::<span class="k">class</span>)
+<span class="f">@HiltAndroidTest</span>
+<span class="k">class</span> HomeScreenTest {
+  <span class="f">@Module @InstallIn</span>(SingletonComponent::<span class="k">class</span>)
+  <span class="k">object</span> FakeNetwork {
+    <span class="f">@Provides @Singleton</span>
+    <span class="k">fun</span> items(): ItemRepository = FakeItemRepository(FixtureItems.SIXTEEN)
+    <span class="f">@Provides</span> <span class="k">fun</span> clock(): Clock = FixedClock(<span class="s">"2026-09-30T09:41:00Z"</span>)
+  }
+  ...
+}</code></pre>
+
+      <div class="callout">
+        <h3>단위 테스트에는 Hilt를 쓰지 않는다</h3>
+        <p>도메인·유스케이스 테스트는 생성자에 Fake를 <strong>직접 넣는다</strong>. DI 프레임워크를 거치면 테스트가 느려지고, 무엇이 주입됐는지 읽기 어려워진다. Hilt는 실제 앱을 조립할 때와 계측 테스트에서만 쓴다.</p>
+      </div>
+
+      <h3>8.3 백엔드 — 수동 DI</h3>
+      <p>Worker는 요청마다 새 환경(<code>env</code>)을 받는다. 프레임워크 없이 함수 하나로 조립하는 편이 명확하고 빠르다.</p>
+      <pre><code><span class="c">// container.ts</span>
+<span class="k">export function</span> <span class="f">buildContainer</span>(env: Env, now: () =&gt; Date = () =&gt; <span class="k">new</span> Date()) {
+  <span class="k">const</span> items = <span class="f">d1ItemRepository</span>(env.DB);
+  <span class="k">const</span> escrows = <span class="f">d1EscrowRepository</span>(env.DB);
+  <span class="k">const</span> images = <span class="f">r2ImageStore</span>(env.BUCKET);
+  <span class="k">const</span> push = <span class="f">fcmNotifier</span>(env.FCM_KEY);
+  <span class="k">return</span> {
+    confirmPurchase: <span class="f">confirmPurchase</span>({ escrows, items, push, now }),
+    startEscrow:     <span class="f">startEscrow</span>({ escrows, items, now }),
+    sendOffer:       <span class="f">sendOffer</span>({ offers: <span class="f">d1OfferRepository</span>(env.DB), items, now }),
+  };
+}
+
+<span class="c">// 테스트에서는 같은 함수에 가짜를 넣는다</span>
+<span class="k">const</span> c = <span class="f">buildContainer</span>(fakeEnv, () =&gt; <span class="k">new</span> Date(<span class="s">"2026-09-30T00:00:00Z"</span>));</code></pre>
+    </section>
+
+    <!-- 09 -->
+    <section id="s9">
+      <h2><span class="n">09</span>UI 계층</h2>
+      <p>화면은 <strong>상태를 받아 그리기만</strong> 한다. 판단이 없으므로 테스트가 쉽고, 디자인이 바뀌어도 로직이 따라 바뀌지 않는다.</p>
+
+      <pre><code><span class="c">// ui/home/HomeViewModel.kt</span>
+<span class="f">@HiltViewModel</span>
+<span class="k">class</span> HomeViewModel <span class="f">@Inject constructor</span>(
+  observeItems: ObserveItems,
+  observeHot: ObserveHotItems,
+  <span class="k">private val</span> toggleFavorite: ToggleFavorite
+) : ViewModel() {
+
+  <span class="k">private val</span> filter = MutableStateFlow(ItemFilter.Default)
+
+  <span class="k">val</span> state: StateFlow&lt;HomeState&gt; =
+    combine(filter.flatMapLatest(observeItems::invoke), observeHot()) { list, hot -&gt;
+      HomeState.Loaded(items = list, hot = hot)
+    }
+    .catch { emit(HomeState.Error(it.toUiError())) }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeState.Loading)
+
+  <span class="k">fun</span> onFavorite(id: ItemId) = viewModelScope.launch { toggleFavorite(id) }
+}
+
+<span class="c">// 상태는 봉인 타입. "로딩 중인데 목록도 있는" 모순 상태가 생길 수 없다</span>
+<span class="k">sealed interface</span> HomeState {
+  <span class="k">data object</span> Loading : HomeState
+  <span class="k">data class</span> Loaded(<span class="k">val</span> items: List&lt;ItemCard&gt;, <span class="k">val</span> hot: List&lt;ItemCard&gt;) : HomeState
+  <span class="k">data class</span> Empty(<span class="k">val</span> reason: EmptyReason) : HomeState
+  <span class="k">data class</span> Error(<span class="k">val</span> error: UiError) : HomeState
+}</code></pre>
+
+      <div class="callout go">
+        <h3>프로토타입의 상태 규칙을 그대로 타입으로 옮긴다</h3>
+        <p>PRD 8.4가 요구한 <strong>로딩 · 빈 화면 · 오류 · 권한 부족</strong> 네 가지를 <code>sealed interface</code>의 분기로 강제한다. <code>when</code>이 모든 분기를 요구하므로, 빈 화면을 빠뜨리면 컴파일이 되지 않는다. 문서로 지키던 규칙을 컴파일러가 지킨다.</p>
+      </div>
+
+      <h3>9.1 화면 목록</h3>
+      <p>프로토타입 SC-01~25를 Compose 화면으로 그대로 옮긴다. 화면 하나 = <code>Screen.kt</code> + <code>ViewModel.kt</code> + <code>State.kt</code> 세 파일.</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>묶음</th><th>화면</th><th>ViewModel이 쓰는 유스케이스</th></tr></thead>
+          <tbody>
+            <tr><td>탐색</td><td>Home · Search · ItemDetail · PhotoViewer</td><td>ObserveItems, ObserveHotItems, SearchItems, ToggleFavorite</td></tr>
+            <tr><td>거래</td><td>Chat · ChatRoom · DealSheet · OfferSheet</td><td>OpenChatRoom, SendMessage, SendOffer, ProposeMeeting</td></tr>
+            <tr><td>안전거래</td><td>SafePay · EscrowDetail · DropOff · EscrowList</td><td>StartEscrow, MarkDelivered, ConfirmPurchase, CancelEscrow, RaiseDispute</td></tr>
+            <tr><td>등록</td><td>Publish (사진·카테고리·가격·장소·옵션)</td><td>PublishItem</td></tr>
+            <tr><td>계정</td><td>Me · Verify · StudentCard · Bank · Settings · Profile</td><td>ObserveVerifyState, SubmitStudentCard, RegisterBankAccount</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section id="s10">
+      <h2><span class="n">10</span>백엔드 설계</h2>
+
+      <h3>10.1 요청 한 번의 흐름</h3>
+      <pre><code><span class="c">// http/routes/escrow.ts — 라우터는 얇다. 변환과 위임만 한다</span>
+app.<span class="f">post</span>(<span class="s">"/v1/escrows/:id/confirm"</span>, auth, <span class="k">async</span> (c) =&gt; {
+  <span class="k">const</span> { confirmPurchase } = <span class="f">buildContainer</span>(c.env);
+  <span class="k">const</span> result = <span class="k">await</span> <span class="f">confirmPurchase</span>({
+    escrowId: c.req.<span class="f">param</span>(<span class="s">"id"</span>),
+    actor: c.<span class="f">get</span>(<span class="s">"userId"</span>),
+  });
+  <span class="k">return</span> result.ok
+    ? c.<span class="f">json</span>(<span class="f">toEscrowDto</span>(result.value))
+    : <span class="f">errorResponse</span>(c, result.error);   <span class="c">// 도메인 오류 → HTTP 코드 + 메시지 코드</span>
+});</code></pre>
+
+      <h3>10.2 D1 스키마 원칙</h3>
+      <ul>
+        <li>모든 주요 테이블에 <code>university_id</code>. 단일 대학 파일럿이어도 처음부터 둔다 — 나중에 붙이면 전체 마이그레이션이다</li>
+        <li>금액은 <strong>정수(원)</strong>로만 저장한다. 부동소수점은 쓰지 않는다</li>
+        <li>상태는 문자열 enum + <code>CHECK</code> 제약. DB가 불가능한 상태를 거부한다</li>
+        <li>돈이 움직이는 모든 사건은 <code>escrow_events</code>에 append-only로 남긴다. 현재 상태는 파생값이다</li>
+        <li>멱등성 키 테이블을 두고 결제·확정·환불 요청을 중복 처리하지 않는다</li>
+      </ul>
+      <pre><code><span class="c">-- migrations/0003_escrow.sql</span>
+<span class="k">CREATE TABLE</span> escrows (
+  id            <span class="k">TEXT PRIMARY KEY</span>,
+  university_id <span class="k">TEXT NOT NULL</span>,
+  item_id       <span class="k">TEXT NOT NULL REFERENCES</span> items(id),
+  buyer_id      <span class="k">TEXT NOT NULL</span>,
+  seller_id     <span class="k">TEXT NOT NULL</span>,
+  price_won     <span class="k">INTEGER NOT NULL CHECK</span>(price_won &gt; 0),
+  fee_won       <span class="k">INTEGER NOT NULL CHECK</span>(fee_won &gt;= 0),
+  way           <span class="k">TEXT NOT NULL CHECK</span>(way <span class="k">IN</span> (<span class="s">'drop'</span>,<span class="s">'meet'</span>)),
+  status        <span class="k">TEXT NOT NULL CHECK</span>(status <span class="k">IN</span> (<span class="s">'paid'</span>,<span class="s">'placed'</span>,<span class="s">'confirmed'</span>,<span class="s">'disputed'</span>,<span class="s">'refunded'</span>)),
+  placed_at     <span class="k">INTEGER</span>,
+  created_at    <span class="k">INTEGER NOT NULL</span>
+);
+<span class="k">CREATE INDEX</span> idx_escrow_buyer <span class="k">ON</span> escrows(buyer_id, created_at <span class="k">DESC</span>);
+<span class="k">CREATE UNIQUE INDEX</span> idx_escrow_active <span class="k">ON</span> escrows(item_id)
+  <span class="k">WHERE</span> status <span class="k">IN</span> (<span class="s">'paid'</span>,<span class="s">'placed'</span>);   <span class="c">-- 매물당 진행 중 거래는 하나뿐</span></code></pre>
+      <p>마지막 부분 인덱스가 <strong>"한 매물에 안전거래는 동시에 하나"</strong>라는 규칙을 DB가 강제하게 만든다. 애플리케이션 코드가 실수해도 데이터는 깨지지 않는다.</p>
+
+      <h3>10.3 채팅 — Durable Object</h3>
+      <ul>
+        <li>채팅방 하나가 DO 인스턴스 하나. 방 안에서는 메시지 순서가 보장된다</li>
+        <li>DO는 연결 관리와 브로드캐스트만 한다. 저장은 D1 어댑터를 통해서 한다</li>
+        <li>앱이 끊긴 동안의 메시지는 재연결 시 <code>since</code> 커서로 동기화한다</li>
+      </ul>
+
+      <h3>10.4 이미지</h3>
+      <ul>
+        <li>앱이 <code>POST /v1/uploads</code>로 서명 URL을 받아 R2에 직접 PUT한다</li>
+        <li>Worker는 바이트를 만지지 않는다 — CPU 시간과 요금을 아낀다</li>
+        <li>학생증은 <strong>별도 버킷</strong>에 넣고 심사 승인 즉시 삭제한다. 접근은 전부 로깅한다</li>
+      </ul>
+    </section>
+
+    <!-- 11 -->
+    <section id="s11">
+      <h2><span class="n">11</span>API 계약</h2>
+      <p>앱과 서버가 각자 타입을 손으로 적으면 반드시 어긋난다. <strong>스키마를 한 곳에 두고 양쪽이 검증</strong>한다.</p>
+
+      <h3>11.1 단일 원천</h3>
+      <ul>
+        <li>서버의 <code>zod</code> 스키마가 원천이다. 요청·응답을 런타임에 검증한다</li>
+        <li>스키마에서 OpenAPI 문서를 생성한다</li>
+        <li>안드로이드 DTO는 <code>kotlinx.serialization</code>으로 손으로 적되, <strong>계약 테스트</strong>가 어긋남을 잡는다 — 저장해둔 실제 응답 JSON으로 파싱이 성공하는지 검증한다</li>
+      </ul>
+
+      <h3>11.2 오류 규약 — 서버는 문구를 모른다</h3>
+      <pre><code><span class="c">// 서버 응답</span>
+{
+  <span class="s">"error"</span>: {
+    <span class="s">"code"</span>: <span class="s">"OFFER_LIMIT_EXCEEDED"</span>,
+    <span class="s">"params"</span>: { <span class="s">"remainHours"</span>: 7 },
+    <span class="s">"traceId"</span>: <span class="s">"01J9X..."</span>
+  }
+}</code></pre>
+      <p>서버는 <code>"오늘 더 제안할 수 없어요"</code> 같은 문장을 절대 내려보내지 않는다. 앱이 <code>OFFER_LIMIT_EXCEEDED</code>를 받아 <strong>사용자 언어로</strong> 문구를 고른다. 이 한 가지 규칙 덕분에 언어를 추가할 때 서버를 재배포하지 않아도 된다.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>HTTP</th><th class="id">code</th><th>앱의 처리</th></tr></thead>
+          <tbody>
+            <tr><td class="num">401</td><td class="id">TOKEN_EXPIRED</td><td>조용히 갱신 후 재시도, 실패 시 로그인</td></tr>
+            <tr><td class="num">403</td><td class="id">VERIFY_REQUIRED</td><td>인증 센터로 이동</td></tr>
+            <tr><td class="num">403</td><td class="id">SANCTIONED</td><td>제재 안내 + 종료일 표시</td></tr>
+            <tr><td class="num">409</td><td class="id">ITEM_ALREADY_SOLD</td><td>상세 새로고침 + 안내</td></tr>
+            <tr><td class="num">409</td><td class="id">ESCROW_EXISTS</td><td>진행 중 거래로 이동</td></tr>
+            <tr><td class="num">409</td><td class="id">ALREADY_CONFIRMED</td><td>상태 갱신, 버튼 비활성</td></tr>
+            <tr><td class="num">422</td><td class="id">OFFER_LIMIT_EXCEEDED</td><td>남은 시간 표시</td></tr>
+            <tr><td class="num">422</td><td class="id">BANNED_KEYWORD</td><td>문제 단어 하이라이트</td></tr>
+            <tr><td class="num">429</td><td class="id">RATE_LIMITED</td><td>지수 백오프 재시도</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 12 -->
+    <section id="s12">
+      <h2><span class="n">12</span>TDD 전략</h2>
+
+      <h3>12.1 사이클</h3>
+      <ol>
+        <li><strong>Red</strong> — 실패하는 테스트를 먼저 쓴다. 테스트 이름은 한국어로 "무엇이 어떻게 되어야 하는가"를 적는다</li>
+        <li><strong>Green</strong> — 통과시키는 <em>최소</em> 구현. 예상되는 다음 요구를 미리 만들지 않는다</li>
+        <li><strong>Refactor</strong> — 중복을 지운다. 테스트가 초록인 상태에서만 구조를 바꾼다</li>
+      </ol>
+
+      <h3>12.2 피라미드</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>층</th><th>비중</th><th>도구</th><th>속도</th><th>무엇을 잡는가</th></tr></thead>
+          <tbody>
+            <tr><td><strong>도메인 단위</strong></td><td>60%</td><td>JUnit5, kotlin.test</td><td>&lt; 1ms</td><td>계산·상태 전이·불변식. 규칙이 깨지면 여기서 즉시 빨개진다</td></tr>
+            <tr><td><strong>유스케이스</strong></td><td>25%</td><td>JUnit5 + Fake + <code>runTest</code></td><td>&lt; 10ms</td><td>순서, 예외 경로, 포트 호출 여부</td></tr>
+            <tr><td><strong>어댑터 계약</strong></td><td>10%</td><td>MockWebServer, Room in-memory, Vitest+D1</td><td>수십 ms</td><td>직렬화, SQL, 실제 응답 파싱</td></tr>
+            <tr><td><strong>화면·E2E</strong></td><td>5%</td><td>Compose UI Test, Robolectric</td><td>초</td><td>핵심 사용자 흐름 3~5개만</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>12.3 테스트 대역은 Fake를 기본으로</h3>
+      <p>Mock 라이브러리로 <code>every { ... } returns ...</code>를 늘어놓으면 <strong>테스트가 구현 세부에 묶인다</strong>. 리팩터링할 때마다 테스트가 깨지면 TDD가 짐이 된다. 그래서 포트마다 손으로 쓴 Fake를 하나씩 둔다.</p>
+      <pre><code><span class="c">// test-fixtures/FakeItemRepository.kt — 모든 테스트가 공유한다</span>
+<span class="k">class</span> FakeItemRepository(initial: List&lt;Item&gt; = emptyList()) : ItemRepository {
+  <span class="k">private val</span> state = MutableStateFlow(initial.associateBy { it.id })
+  <span class="k">var</span> saveCount = 0; <span class="k">private set</span>
+  <span class="k">var</span> failNext: Throwable? = <span class="k">null</span>          <span class="c">// 실패 경로 테스트용</span>
+
+  <span class="k">override fun</span> observeItems(f: ItemFilter) =
+    state.map { it.values.filter(f::matches).sortedByDescending(Item::bumpedAt) }
+
+  <span class="k">override suspend fun</span> save(item: Item) {
+    failNext?.let { failNext = <span class="k">null</span>; <span class="k">throw</span> it }
+    saveCount++
+    state.update { it + (item.id to item) }
+  }
+}</code></pre>
+
+      <h3>12.4 고정 픽스처</h3>
+      <p>프로토타입의 가상 매물 16건을 <code>FixtureItems</code>로 그대로 옮긴다. 앱 테스트·서버 테스트·화면 스냅샷이 <strong>같은 데이터</strong>를 쓰면 화면과 로직의 기대값이 어긋나지 않는다.</p>
+
+      <h3>12.5 CI에서 돌리는 것</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>단계</th><th>명령</th><th>차단 조건</th></tr></thead>
+          <tbody>
+            <tr><td>아키텍처 규칙</td><td><code>./gradlew :app:testArchitecture</code></td><td>의존 방향 위반 시 실패</td></tr>
+            <tr><td>단위 테스트</td><td><code>./gradlew test</code></td><td>하나라도 실패 시 병합 불가</td></tr>
+            <tr><td>커버리지</td><td>Kover</td><td>domain·application 85% 미만 시 실패</td></tr>
+            <tr><td>문구 하드코딩</td><td>detekt 커스텀 룰</td><td>Compose에 한글 리터럴이 있으면 실패</td></tr>
+            <tr><td>미번역 키</td><td><code>./gradlew :i18n:testTranslations</code></td><td>ko에 있고 en에 없는 키가 있으면 실패</td></tr>
+            <tr><td>서버 테스트</td><td><code>npm test</code> (Vitest + workerd)</td><td>실패 시 배포 불가</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 13 -->
+    <section id="s13">
+      <h2><span class="n">13</span>테스트 케이스</h2>
+      <p>아래는 구현 시작 전에 <strong>먼저 작성할</strong> 테스트 목록이다. 이름을 그대로 함수명으로 쓴다.</p>
+
+      <h3>13.1 도메인 — 수수료와 금액</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>테스트 이름</th><th>기대</th></tr></thead>
+          <tbody>
+            <tr><td class="id">T-FEE-01</td><td>수수료는 물건값의 2퍼센트다</td><td>30,000원 → 600원</td></tr>
+            <tr><td class="id">T-FEE-02</td><td>2퍼센트가 500원보다 작으면 500원을 받는다</td><td>10,000원 → 500원</td></tr>
+            <tr><td class="id">T-FEE-03</td><td>경계값 25,000원은 정확히 500원이다</td><td>500원</td></tr>
+            <tr><td class="id">T-FEE-04</td><td>수수료는 원 단위로 떨어진다</td><td>소수점 없음</td></tr>
+            <tr><td class="id">T-MON-01</td><td>음수 금액은 만들 수 없다</td><td><code>OutOfRange</code></td></tr>
+            <tr><td class="id">T-MON-02</td><td>500만원을 넘는 금액은 만들 수 없다</td><td><code>OutOfRange</code></td></tr>
+            <tr><td class="id">T-MON-03</td><td>0원은 나눔으로 허용된다</td><td>성공</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>13.2 도메인 — 안전거래 상태 전이</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>테스트 이름</th><th>기대</th></tr></thead>
+          <tbody>
+            <tr><td class="id">T-ESC-01</td><td>결제완료 상태에서 전달 표시하면 전달완료가 된다</td><td>PLACED</td></tr>
+            <tr><td class="id">T-ESC-02</td><td>문고리 거래는 사진 없이 전달 표시할 수 없다</td><td><code>ProofRequired</code></td></tr>
+            <tr><td class="id">T-ESC-03</td><td>전달 전에는 확정할 수 없다</td><td><code>NotConfirmable</code></td></tr>
+            <tr><td class="id">T-ESC-04</td><td>확정된 거래는 다시 확정할 수 없다</td><td><code>NotConfirmable</code></td></tr>
+            <tr><td class="id">T-ESC-05</td><td>전달 후에는 취소할 수 없다</td><td><code>NotCancellable</code></td></tr>
+            <tr><td class="id">T-ESC-06</td><td>자동 확정 기한은 전달 시각 더하기 7일이다</td><td>고정 시계로 검증</td></tr>
+            <tr><td class="id">T-ESC-07</td><td>분쟁이 접수되면 자동 확정 기한이 사라진다</td><td><code>null</code></td></tr>
+            <tr><td class="id">T-ESC-08</td><td>환불되면 물건값과 수수료를 모두 돌려준다</td><td>price + fee</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>13.3 도메인 — 가격 제안</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>테스트 이름</th><th>기대</th></tr></thead>
+          <tbody>
+            <tr><td class="id">T-OFF-01</td><td>희망가보다 높은 금액은 제안할 수 없다</td><td><code>TooHigh</code></td></tr>
+            <tr><td class="id">T-OFF-02</td><td>희망가와 같은 금액도 제안할 수 없다</td><td><code>TooHigh</code></td></tr>
+            <tr><td class="id">T-OFF-03</td><td>100원 미만은 제안할 수 없다</td><td><code>TooLow</code></td></tr>
+            <tr><td class="id">T-OFF-04</td><td>같은 매물에 24시간 안에 네 번째 제안은 막힌다</td><td><code>LimitExceeded</code></td></tr>
+            <tr><td class="id">T-OFF-05</td><td>24시간이 지나면 다시 제안할 수 있다</td><td>고정 시계 +24h01m</td></tr>
+            <tr><td class="id">T-OFF-06</td><td>수락하면 나머지 대기 제안이 모두 거절된다</td><td>REJECTED ×N</td></tr>
+            <tr><td class="id">T-OFF-07</td><td>수락하면 매물 가격이 제안 금액으로 바뀐다</td><td>가격 갱신</td></tr>
+            <tr><td class="id">T-OFF-08</td><td>나눔 매물에는 제안할 수 없다</td><td><code>NotOfferable</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>13.4 유스케이스 — 시나리오</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>테스트 이름</th><th>검증 대상</th></tr></thead>
+          <tbody>
+            <tr><td class="id">T-UC-01</td><td>구매 확정하면 매물이 거래완료로 바뀌고 판매자에게 알림이 간다</td><td>items.markSold 호출 · notifier 1회</td></tr>
+            <tr><td class="id">T-UC-02</td><td>저장이 실패하면 알림을 보내지 않는다</td><td><code>failNext</code> 주입 · notifier 0회</td></tr>
+            <tr><td class="id">T-UC-03</td><td>2단계 인증이 아니면 매물을 등록할 수 없다</td><td><code>VerifyRequired</code></td></tr>
+            <tr><td class="id">T-UC-04</td><td>정산 계좌가 없으면 안전결제를 켤 수 없다</td><td><code>BankRequired</code></td></tr>
+            <tr><td class="id">T-UC-05</td><td>금지어가 포함되면 등록이 차단되고 단어를 알려준다</td><td>오류에 단어 포함</td></tr>
+            <tr><td class="id">T-UC-06</td><td>제안을 보내면 채팅방이 없을 때 새로 만든다</td><td>방 1개 생성</td></tr>
+            <tr><td class="id">T-UC-07</td><td>같은 매물·같은 상대에는 채팅방이 하나만 생긴다</td><td>재호출 시 동일 id</td></tr>
+            <tr><td class="id">T-UC-08</td><td>이미지 업로드가 실패하면 매물이 저장되지 않는다</td><td>saveCount 0</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>13.5 어댑터·화면</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>테스트 이름</th><th>도구</th></tr></thead>
+          <tbody>
+            <tr><td class="id">T-AD-01</td><td>서버 오류 응답을 UiError로 옮긴다</td><td>MockWebServer</td></tr>
+            <tr><td class="id">T-AD-02</td><td>실제 응답 JSON이 DTO로 파싱된다 (계약)</td><td>저장된 응답 파일</td></tr>
+            <tr><td class="id">T-AD-03</td><td>네트워크가 끊기면 캐시된 목록을 보여준다</td><td>Room in-memory</td></tr>
+            <tr><td class="id">T-UI-01</td><td>목록이 비면 빈 화면과 다음 행동 버튼이 보인다</td><td>Compose Test</td></tr>
+            <tr><td class="id">T-UI-02</td><td>미인증 사용자가 등록을 누르면 인증 화면으로 간다</td><td>Compose Test</td></tr>
+            <tr><td class="id">T-UI-03</td><td>사진을 누르면 전체보기가 열리고 장수가 표시된다</td><td>Compose Test</td></tr>
+            <tr><td class="id">T-UI-04</td><td>글자 크기 200%에서 등록 버튼이 잘리지 않는다</td><td>fontScale 테스트</td></tr>
+            <tr><td class="id">T-E2E-01</td><td>인증부터 안전결제 확정까지 한 바퀴가 돈다</td><td>Compose + Fake 서버</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>13.6 서버</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>테스트 이름</th><th>기대</th></tr></thead>
+          <tbody>
+            <tr><td class="id">T-SV-01</td><td>확정 요청을 두 번 보내도 정산은 한 번만 일어난다</td><td>멱등성 키</td></tr>
+            <tr><td class="id">T-SV-02</td><td>같은 매물에 두 번째 안전거래를 시작할 수 없다</td><td>유니크 인덱스 위반 → 409</td></tr>
+            <tr><td class="id">T-SV-03</td><td>거래 당사자가 아니면 진행 상태를 볼 수 없다</td><td>403</td></tr>
+            <tr><td class="id">T-SV-04</td><td>예치 잔액이 원장 합계와 일치한다</td><td>대사 테스트</td></tr>
+            <tr><td class="id">T-SV-05</td><td>학생증 승인 후 R2에서 원본이 삭제된다</td><td>객체 없음</td></tr>
+            <tr><td class="id">T-SV-06</td><td>다른 학교 매물은 목록에 나오지 않는다</td><td>university_id 격리</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 14 -->
+    <section id="s14">
+      <h2><span class="n">14</span>다국어 설계</h2>
+      <p>한국어와 영어를 기본으로 하되, <strong>세 번째 언어를 추가할 때 코드를 고치지 않는 것</strong>이 목표다.</p>
+
+      <h3>14.1 누가 문구를 소유하는가</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>구분</th><th>소유</th><th>이유</th></tr></thead>
+          <tbody>
+            <tr><td>화면 문구·오류 메시지</td><td><strong>앱</strong></td><td>서버 배포 없이 언어를 늘릴 수 있다. 오프라인에서도 문구가 나온다</td></tr>
+            <tr><td>푸시 알림</td><td><strong>서버</strong> (사용자 언어 저장)</td><td>앱이 꺼져 있어도 보내야 한다</td></tr>
+            <tr><td>이메일</td><td><strong>서버</strong></td><td>같은 이유</td></tr>
+            <tr><td>약관·정책</td><td>문서 파일</td><td>법률 검토 단위가 문서 전체다</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>14.2 키 규칙</h3>
+      <pre><code><span class="c">&lt;!-- res/values/strings.xml (ko) --&gt;</span>
+&lt;string name=<span class="s">"home_search_placeholder"</span>&gt;물건 이름이나 과목명으로 찾아보세요&lt;/string&gt;
+&lt;string name=<span class="s">"escrow_confirm_dialog_body"</span>&gt;확정하면 %1$s이 판매자에게 넘어가고 되돌릴 수 없어요.&lt;/string&gt;
+&lt;plurals name=<span class="s">"offer_remain_count"</span>&gt;
+  &lt;item quantity=<span class="s">"other"</span>&gt;오늘 %d번 더 제안할 수 있어요&lt;/item&gt;
+&lt;/plurals&gt;
+
+<span class="c">&lt;!-- res/values-en/strings.xml --&gt;</span>
+&lt;string name=<span class="s">"home_search_placeholder"</span>&gt;Search by item or course name&lt;/string&gt;
+&lt;plurals name=<span class="s">"offer_remain_count"</span>&gt;
+  &lt;item quantity=<span class="s">"one"</span>&gt;You can make %d more offer today&lt;/item&gt;
+  &lt;item quantity=<span class="s">"other"</span>&gt;You can make %d more offers today&lt;/item&gt;
+&lt;/plurals&gt;</code></pre>
+      <ul>
+        <li>키는 <code>화면_요소_상태</code> 순서. 알파벳 정렬하면 화면별로 모인다</li>
+        <li>한국어는 복수형이 <code>other</code> 하나뿐이지만 <strong>처음부터 <code>plurals</code>로 선언</strong>한다. 영어를 넣을 때 코드를 고치지 않기 위해서다</li>
+        <li>문장을 <code>"제안 " + n + "번"</code>처럼 <strong>이어 붙이지 않는다</strong> — 어순이 다른 언어에서 반드시 깨진다. 항상 위치 인자를 쓴다</li>
+      </ul>
+
+      <h3>14.3 도메인은 문구를 모른다</h3>
+      <pre><code><span class="c">// 도메인은 오류 타입만 반환한다</span>
+<span class="k">sealed interface</span> OfferError {
+  <span class="k">data object</span> TooHigh : OfferError
+  <span class="k">data class</span> LimitExceeded(<span class="k">val</span> remainHours: Int) : OfferError
+}
+
+<span class="c">// i18n 어댑터가 문구로 옮긴다. 여기가 유일한 번역 지점이다</span>
+<span class="k">fun</span> OfferError.toMessage(res: Resources): String = <span class="k">when</span> (<span class="k">this</span>) {
+  TooHigh -&gt; res.getString(R.string.offer_error_too_high)
+  <span class="k">is</span> LimitExceeded -&gt; res.getQuantityString(R.plurals.offer_error_limit, remainHours, remainHours)
+}</code></pre>
+
+      <h3>14.4 숫자·날짜·통화</h3>
+      <ul>
+        <li>금액은 <code>NumberFormat.getCurrencyInstance(locale)</code>로 만든다. <code>"원"</code>을 문자열로 붙이지 않는다</li>
+        <li>상대 시간("3분 전")은 <code>RelativeDateTimeFormatter</code>를 쓴다. 직접 만들면 언어마다 다시 만들어야 한다</li>
+        <li>서버는 항상 <strong>UTC 정수 타임스탬프</strong>를 준다. 표시 시점에만 지역 시간대로 바꾼다</li>
+      </ul>
+
+      <h3>14.5 언어를 하나 추가하는 절차</h3>
+      <ol>
+        <li><code>res/values-ja/strings.xml</code> 추가</li>
+        <li>서버 <code>messages/ja.json</code> 추가 (푸시·이메일용)</li>
+        <li><code>testTranslations</code>가 빠진 키를 알려준다 → 채운다</li>
+        <li>끝. <strong>코드 변경 0줄</strong></li>
+      </ol>
+
+      <div class="callout warn">
+        <h3>이 구조를 깨는 흔한 실수</h3>
+        <ul>
+          <li>ViewModel에서 <code>Resources</code>를 받아 문구를 만들기 → 테스트에 안드로이드가 끌려온다. 상태에는 <strong>키와 인자</strong>만 담고 Compose에서 해석한다</li>
+          <li>서버 오류 메시지를 그대로 화면에 띄우기 → 그 순간 서버가 문구 소유자가 된다</li>
+          <li>한국어만 있는 상태에서 <code>plurals</code>를 생략 → 영어 추가 시 전부 다시 작성</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 15 -->
+    <section id="s15">
+      <h2><span class="n">15</span>구현 순서</h2>
+      <p>화면 단위가 아니라 <strong>수직 한 줄(도메인→유스케이스→어댑터→화면)</strong>씩 완성한다. 첫 줄이 끝나면 구조가 검증되고, 나머지는 같은 모양을 반복한다.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">단계</th><th>내용</th><th>끝났다고 보는 기준</th></tr></thead>
+          <tbody>
+            <tr><td class="id">S0</td><td>모듈 골격, Hilt 배선, 아키텍처 테스트, CI</td><td><code>testArchitecture</code>가 위반을 실제로 잡는다</td></tr>
+            <tr><td class="id">S1</td><td><strong>수직 한 줄</strong>: Money·FeePolicy → ObserveItems → 목록 API → 홈 화면</td><td>홈에 서버 데이터가 뜨고 도메인 테스트 20개가 초록</td></tr>
+            <tr><td class="id">S2</td><td>인증 2단계 (이메일·학생증)</td><td>등급별 권한 차단이 화면에서 동작</td></tr>
+            <tr><td class="id">S3</td><td>매물 등록·상세·사진 업로드·전체보기</td><td>사진을 올리고 목록에 반영</td></tr>
+            <tr><td class="id">S4</td><td>채팅 (DO + WebSocket)</td><td>끊겼다 붙어도 메시지가 누락되지 않는다</td></tr>
+            <tr><td class="id">S5</td><td>가격 제안</td><td>T-OFF 전 항목 초록</td></tr>
+            <tr><td class="id">S6</td><td>정산 계좌 · 안전거래 · 문고리</td><td>T-ESC·T-SV 전 항목 초록, 대사 일치</td></tr>
+            <tr><td class="id">S7</td><td>영어 리소스 · 접근성 · 성능</td><td>미번역 키 0, 글자 200% 통과</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout go">
+        <h3>S1을 가장 공들여 만든다</h3>
+        <p>첫 수직 한 줄이 이후 모든 기능의 본보기가 된다. 여기서 포트 이름, 테스트 이름, 폴더 위치, Fake 작성법의 관례를 정하고 <strong>README에 예시로 박아둔다</strong>. 이후 기능은 이 모양을 복사하면 된다.</p>
+      </div>
+    </section>
+
+    <!-- 16 -->
+    <section id="s16">
+      <h2><span class="n">16</span>결정과 미결</h2>
+
+      <h3>16.1 결정 기록</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ADR</th><th>결정</th><th>대안과 기각 이유</th></tr></thead>
+          <tbody>
+            <tr><td class="id">ADR-1</td><td>안드로이드 네이티브 (Kotlin + Compose)</td><td>React Native — PRD의 기존 선택이지만 안드로이드 전용이 되면서 이점이 사라졌다. 순수 JVM 도메인 모듈과 컴파일 타임 DI를 얻는 쪽이 요구하신 원칙에 더 맞는다</td></tr>
+            <tr><td class="id">ADR-2</td><td>Hilt</td><td>Koin — 설정은 쉽지만 오류가 실행 시점에 드러난다. 그래프 검증을 컴파일러에게 맡긴다</td></tr>
+            <tr><td class="id">ADR-3</td><td>D1</td><td>외부 Postgres — 기능은 강하지만 엣지에서 연결 관리가 필요하고 운영이 늘어난다. 저장소는 포트 뒤에 있으므로 나중에 바꿀 수 있다</td></tr>
+            <tr><td class="id">ADR-4</td><td>서버는 메시지 코드만 반환</td><td>서버가 문구 생성 — 언어 추가마다 서버 배포가 필요해진다</td></tr>
+            <tr><td class="id">ADR-5</td><td>Fake 우선, Mock 최소</td><td>MockK 전면 사용 — 테스트가 구현에 묶여 리팩터링을 막는다</td></tr>
+            <tr><td class="id">ADR-6</td><td>도메인 규칙을 앱·서버 양쪽에 둔다</td><td>서버만 — 화면이 서버 응답을 기다려야 버튼 상태를 정할 수 있다. 서버가 최종 판정자이되 앱은 즉시 반응용으로 같은 규칙을 갖는다. <strong>두 곳의 테스트 케이스 표를 공유해 어긋남을 막는다</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>16.2 확인이 필요한 사항</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">번호</th><th>질문</th><th>기본값</th></tr></thead>
+          <tbody>
+            <tr><td class="id">Q-A1</td><td>최소 지원 안드로이드 버전은?</td><td>API 26 (Android 8). 국내 점유율 99% 이상</td></tr>
+            <tr><td class="id">Q-A2</td><td>안전거래 결제는 어느 PG를 붙이는가? 에스크로 위탁 여부에 따라 서버 설계가 갈린다</td><td>PG 에스크로 위탁. 미정 시 결제 어댑터를 Fake로 두고 나머지를 먼저 만든다</td></tr>
+            <tr><td class="id">Q-A3</td><td>오프라인에서 어디까지 동작해야 하는가?</td><td>목록·상세 열람만 캐시. 쓰기는 온라인 필수</td></tr>
+            <tr><td class="id">Q-A4</td><td>영어 문구는 누가 검수하는가?</td><td>기계 번역 후 팀 검수. 출시 전 1회</td></tr>
+            <tr><td class="id">Q-A5</td><td>iOS 계획이 생길 가능성이 있는가?</td><td>없다고 보고 네이티브로 간다. 생긴다면 domain을 KMP로 올리는 경로를 남겨둔다</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <h3>KMP 탈출구</h3>
+        <p><code>domain</code>과 <code>application</code>은 안드로이드 의존성이 전혀 없으므로, iOS가 필요해지면 <strong>이 두 모듈만 Kotlin Multiplatform으로 전환</strong>하면 된다. 어댑터와 UI는 플랫폼별로 새로 쓴다. 지금 구조를 지키는 것이 그 선택지를 살려둔다.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>공강마켓 설계서 v1.0</span>
+    <span>기준: 프로토타입 + PRD/SRS v1.5</span>
+    <span>2026-09-30</span>
+  </footer>
+</div>
+</body>
+</html>
