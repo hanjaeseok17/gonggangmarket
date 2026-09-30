@@ -652,6 +652,51 @@
   .bankcard .ba{font-size:19px;font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums;}
   .bankcard .bh{font-size:12.5px;opacity:.85;margin-top:2px;}
 
+  /* ===== 사진 전체보기 ===== */
+  .slide{position:relative;cursor:zoom-in;}
+  .zoomhint{
+    position:absolute;right:12px;bottom:12px;
+    width:30px;height:30px;border-radius:4px;
+    background:rgba(11,17,22,.55);color:#fff;
+    display:grid;place-items:center;font-size:14px;
+  }
+  .lightbox{
+    position:absolute;inset:0;z-index:90;
+    background:#0B1116;
+    display:flex;flex-direction:column;
+    animation:fade .16s ease;
+  }
+  .lightbox[hidden]{display:none !important;}
+  .lbtop{
+    flex:none;height:52px;display:flex;align-items:center;
+    padding:0 6px 0 14px;color:#fff;
+  }
+  .lbtop .n{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.02em;}
+  .lbtop .x{
+    margin-left:auto;width:44px;height:44px;display:grid;place-items:center;
+    font-size:22px;color:#fff;border-radius:50%;
+  }
+  .lbtop .x:active{background:rgba(255,255,255,.12);}
+  .lbscroll{
+    flex:1;display:flex;overflow-x:auto;overflow-y:hidden;
+    scroll-snap-type:x mandatory;scrollbar-width:none;
+  }
+  .lbscroll::-webkit-scrollbar{display:none;}
+  .lbslide{
+    flex:none;width:100%;height:100%;
+    scroll-snap-align:center;
+    display:grid;place-items:center;padding:0 8px;
+  }
+  .lbslide .pic{width:100%;height:auto;aspect-ratio:1/1;border-radius:4px;}
+  .lbfoot{
+    flex:none;padding:14px 16px calc(18px + env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;gap:11px;align-items:center;
+  }
+  .lbdots{display:flex;gap:6px;}
+  .lbdots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);display:block;}
+  .lbdots i.on{background:#fff;width:18px;border-radius:3px;}
+  .lbcap{color:#B9C3CC;font-size:12.5px;text-align:center;line-height:1.5;}
+
   /* ===== 오버레이 ===== */
   .scrim{
     position:absolute;inset:0;background:rgba(15,25,34,.42);z-index:60;
@@ -725,6 +770,7 @@
 
   <nav class="tabbar" id="tabbar"></nav>
 
+  <div class="lightbox" id="lightbox" hidden></div>
   <div class="scrim" id="scrim" hidden></div>
   <div class="toast" id="toast" hidden></div>
 </div>
@@ -755,8 +801,12 @@
      쓰지 않으므로 인터넷 없이도 그대로 보인다. */
   var picN = 0;
 
-  function PIC(kind){
+  /* v: 같은 물건을 각도·거리만 달리해 여러 장처럼 보이게 한다 */
+  function PIC(kind, v){
     var u = "p" + (++picN);
+    v = v || 0;
+    var view = v === 1 ? ' transform="rotate(6 50 50) scale(1.12) translate(-5 -4)"'
+             : v === 2 ? ' transform="rotate(-4 50 50) scale(.88) translate(7 5)"' : "";
     function lg(id, a, b, x2, y2){
       return '<linearGradient id="' + id + '" x1="0" y1="0" x2="' + (x2||0) + '" y2="' + (y2===undefined?1:y2) + '">' +
         '<stop offset="0" stop-color="' + a + '"/><stop offset="1" stop-color="' + b + '"/></linearGradient>';
@@ -982,8 +1032,10 @@
       "<defs>" + defs + extra + "</defs>" +
       '<rect width="100" height="100" fill="url(#'+u+'bg)"/>' +
       '<rect width="100" height="100" fill="url(#'+u+'v)"/>' +
-      '<ellipse cx="50" cy="83" rx="27" ry="4.6" fill="#0B1116" opacity=".2" filter="url(#'+u+'s)"/>' +
-      body +
+      "<g" + view + ">" +
+        '<ellipse cx="50" cy="83" rx="27" ry="4.6" fill="#0B1116" opacity=".2" filter="url(#'+u+'s)"/>' +
+        body +
+      "</g>" +
     "</svg>";
   }
 
@@ -1189,6 +1241,37 @@
   }
 
   function closeOverlay(){ scrim.hidden = true; scrim.innerHTML = ""; }
+
+  /* 사진 전체보기 — 여러 장이면 좌우로 넘긴다 */
+  var lb = document.getElementById("lightbox");
+  function openLightbox(itemId, start){
+    var it = item(itemId);
+    if (!it) return;
+    var n = 3;
+    var slides = "", dots = "";
+    for (var i=0;i<n;i++){
+      slides += '<div class="lbslide">' + PIC(it.pic, i) + "</div>";
+      dots += "<i" + (i === start ? ' class="on"' : "") + "></i>";
+    }
+    lb.innerHTML =
+      '<div class="lbtop"><span class="n" id="lb-n">' + (start+1) + " / " + n + "</span>" +
+        '<button class="x" data-act="closelb" aria-label="닫기">×</button></div>' +
+      '<div class="lbscroll" id="lb-scroll">' + slides + "</div>" +
+      '<div class="lbfoot"><div class="lbdots" id="lb-dots">' + dots + "</div>" +
+        '<div class="lbcap">' + esc(it.title) + "</div></div>";
+    lb.hidden = false;
+
+    var sc = document.getElementById("lb-scroll");
+    sc.scrollLeft = sc.clientWidth * start;
+    sc.addEventListener("scroll", function(){
+      var i = Math.round(sc.scrollLeft / sc.clientWidth);
+      var nn = document.getElementById("lb-n");
+      if (nn) nn.textContent = (i+1) + " / " + n;
+      var dd = document.getElementById("lb-dots");
+      if (dd) [].forEach.call(dd.children, function(d, k){ d.className = k === i ? "on" : ""; });
+    });
+  }
+  function closeLightbox(){ lb.hidden = true; lb.innerHTML = ""; }
   scrim.addEventListener("click", function(e){ if (e.target === scrim) closeOverlay(); });
 
   function sheet(html){
@@ -1384,7 +1467,10 @@
     var mine = it.seller === "me";
 
     var slides = "";
-    for (var i=0;i<3;i++) slides += '<div class="slide">' + PIC(it.pic) + "</div>";
+    for (var i=0;i<3;i++){
+      slides += '<div class="slide" data-act="zoom" data-id="' + it.id + '" data-i="' + i + '">' +
+        PIC(it.pic, i) + '<span class="zoomhint">⤢</span></div>';
+    }
 
     var metaRows = "";
     if (it.meta){
@@ -2208,6 +2294,8 @@
       S.filter.cat = "all"; S.filter.freeOnly = false; S.filter.maxPrice = 0; render();
     },
     item: function(el){ closeOverlay(); go("detail", el.getAttribute("data-id")); },
+    zoom: function(el){ openLightbox(el.getAttribute("data-id"), parseInt(el.getAttribute("data-i"),10) || 0); },
+    closelb: closeLightbox,
     profile: function(el){ go("profile", el.getAttribute("data-id")); },
 
     sort: function(){
@@ -2725,11 +2813,8 @@
     confirm: function(el){
       var e = escrow(el.getAttribute("data-id")), it = item(e.itemId);
       dialog("구매를 확정할까요?", "확정하면 " + won(e.price) + "이 판매자에게 넘어가고 되돌릴 수 없어요. 물건을 먼저 확인해 주세요.", "확정", function(){
+        /* 안전거래는 수수료로만 돌아간다 — 크레딧은 관여하지 않는다 */
         e.status = "confirmed"; it.status = "done";
-        if (it.seller === "me"){
-          S.credits += DEAL_REWARD;
-          S.creditLog.unshift({t:"거래완료 적립 · " + it.title.slice(0,14), n:DEAL_REWARD, m:0});
-        }
         render();
         toast("확정했어요. 판매자에게 1영업일 안에 입금돼요.", "후기 쓰기", function(){
           toast("평가 고마워요. 다음 사람에게 도움이 돼요.");
