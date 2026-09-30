@@ -396,11 +396,11 @@
 <div class="shell">
 
   <header class="cover">
-    <span class="eyebrow">PRD + SRS · v1.5 초안</span>
+    <span class="eyebrow">PRD + SRS · v1.6 초안</span>
     <h1>공강마켓</h1>
     <p class="lede">같은 캠퍼스 학생끼리만 쓰는 중고거래 앱. 학교 이메일과 학생증으로 재학생임을 확인하고, 공강 시간에 교내에서 만나 직거래한다. 지역이 아니라 <strong>학교</strong>가 거래권의 단위다.</p>
     <dl class="meta">
-      <div><dt>문서 버전</dt><dd>1.5 (초안)</dd></div>
+      <div><dt>문서 버전</dt><dd>1.6 (초안)</dd></div>
       <div><dt>최종 수정</dt><dd>2026-09-23</dd></div>
       <div><dt>대상 릴리스</dt><dd>MVP · 파일럿 1개 대학</dd></div>
       <div><dt>독자</dt><dd>기획 · 개발 · 운영</dd></div>
@@ -504,6 +504,7 @@
             <tr><td>성사</td><td>거래 완료율</td><td class="num">45%</td><td>등록 후 21일 내 '거래완료'로 바뀐 매물 비율</td></tr>
             <tr><td>속도</td><td>첫 채팅 응답 시간 중앙값</td><td class="num">30분 이내</td><td>구매자 최초 메시지 → 판매자 첫 답장</td></tr>
             <tr><td>속도</td><td>등록 → 거래완료 소요 중앙값</td><td class="num">4일 이내</td><td>매물 생명주기 로그</td></tr>
+            <tr><td>탐색</td><td>인기 카드 클릭률</td><td class="num">홈 진입의 30%</td><td>홈을 연 세션 중 인기 카드를 눌러 상세로 간 비율</td></tr>
             <tr><td>유지</td><td>4주차 재방문율</td><td class="num">35%</td><td>가입 코호트 기준 주간 리텐션</td></tr>
             <tr><td>수익</td><td>안전거래 이용률</td><td class="num">거래의 25%</td><td>거래완료 중 안전거래로 이뤄진 비율</td></tr>
             <tr><td>안전</td><td>신고 발생률</td><td class="num">1% 미만</td><td>신고 건수 ÷ 거래 시도 건수</td></tr>
@@ -849,6 +850,7 @@
 
       <h3>8.1 화면 목록</h3>
       <p>하단 탭 4개를 뼈대로 한다. 커뮤니티·동네생활 같은 비거래 기능은 넣지 않는다 — 학교 커뮤니티가 이미 있고, 그와 경쟁하면 둘 다 진다.</p>
+      <p>홈은 <strong>검색 바 → 인기 매물(가로) → 전체 매물(세로)</strong> 순서다. 처음 열었을 때 "지금 학교에서 뭐가 도는지"가 먼저 보이고, 찾는 것이 분명한 사람은 맨 위 검색으로 바로 간다.</p>
       <div class="scroller">
         <table>
           <thead><tr><th class="id">ID</th><th>화면</th><th>진입 경로</th><th>필요 등급</th></tr></thead>
@@ -874,6 +876,7 @@
             <tr><td class="id">SC-23</td><td>안전결제</td><td>채팅방 ‘거래하기’</td><td>2단계</td></tr>
             <tr><td class="id">SC-24</td><td>안전거래 진행</td><td>결제 직후 · SC-13 내역</td><td>당사자</td></tr>
             <tr><td class="id">SC-25</td><td>문고리 — 물건 두기</td><td>SC-24 판매자 버튼</td><td>판매자</td></tr>
+            <tr><td class="id">SC-26</td><td>사진 전체보기</td><td>SC-07 사진 탭</td><td>가입자</td></tr>
             <tr><td class="id">SC-19</td><td>가격 제안 보내기</td><td>SC-07 하단 '가격 제안'</td><td>1단계</td></tr>
                         <tr><td class="id">SC-18</td><td>운영자 콘솔 <span class="pri could">웹</span></td><td>별도 웹 주소</td><td>운영자</td></tr>
           </tbody>
@@ -892,7 +895,11 @@
             <tr><td>하단 탭</td><td>높이 56 + 안전영역, 4개 고정</td><td>채팅 탭에 안읽음 배지</td></tr>
             <tr><td>본문 글자</td><td>15sp / 행간 1.6</td><td>OS 글자 크기 200%까지 대응 (NFR-A11Y-02)</td></tr>
             <tr><td>타이포 단계</td><td>제목 20 · 소제목 17 · 본문 15 · 보조 13 · 캡션 11</td><td>가격은 본문보다 한 단계 크고 굵게</td></tr>
-            <tr><td>이미지 비율</td><td>목록 썸네일 1:1 · 상세 캐러셀 4:3</td><td>원본 비율이 달라도 중앙 크롭</td></tr>
+            <tr><td>이미지 비율</td><td>목록 썸네일 1:1 · 인기 카드 1:1 · 상세 캐러셀 4:3</td><td>원본 비율이 달라도 중앙 크롭</td></tr>
+            <tr><td>모서리 반경</td><td>이미지·카드 4~5px · 버튼 6px · 바텀시트 12px · 원형은 50%</td><td>둥글수록 친근하지만 흔해 보인다. 각지게 눌러 이 서비스의 인상을 만든다</td></tr>
+            <tr><td>그림자</td><td>쓰지 않는다. 경계는 1px 선으로</td><td>떠 있는 카드보다 눌러 붙은 면이 정돈돼 보인다. 예외는 바텀시트와 토스트</td></tr>
+            <tr><td>자간</td><td>제목 -0.035em · 본문 -0.012em · 라벨 +0.1em</td><td>큰 글자는 조이고 작은 라벨은 벌려 위계를 만든다</td></tr>
+            <tr><td>숫자</td><td>가격·수량은 tabular-nums</td><td>목록에서 자릿수가 세로로 맞는다</td></tr>
           </tbody>
         </table>
       </div>
@@ -903,6 +910,8 @@
           <thead><tr><th>컴포넌트</th><th>구성</th><th>사용처</th></tr></thead>
           <tbody>
             <tr><td><strong>매물 카드</strong></td><td>썸네일(1:1) · 제목 2줄 · 가격 · 거래 장소 · 등록 경과 시간 · 상태 배지 · 찜 수</td><td>SC-05, SC-06, SC-15</td></tr>
+            <tr><td><strong>인기 카드</strong></td><td>정사각 이미지 · 좌상단 순위 배지(1~3위는 강조색) · 우상단 찜 버튼 · 하단 상태 띠 · 제목 2줄 · 가격 · 찜 수</td><td>SC-05 상단</td></tr>
+            <tr><td><strong>제품 이미지</strong></td><td>밝은 스튜디오 배경 + 접지 그림자 위에 물건 한 점. 사진이 없을 때도 같은 규격으로 대체 이미지를 만든다</td><td>전역</td></tr>
             <tr><td><strong>상태 배지</strong></td><td>예약중 / 거래완료 / 나눔 — 세 종류만. 판매중은 배지를 붙이지 않는다</td><td>매물 카드, SC-07</td></tr>
             <tr><td><strong>인증 배너</strong></td><td>현재 단계 · 다음 할 일 · 이동 버튼. 화면 상단 고정</td><td>미인증 사용자의 SC-05, SC-13</td></tr>
             <tr><td><strong>장소 칩</strong></td><td>장소명 + 건물. 최대 3개 가로 나열, 초과 시 "+N"</td><td>SC-07, SC-08, SC-10</td></tr>
@@ -1029,6 +1038,9 @@
           <thead><tr><th>요소</th><th>규칙</th></tr></thead>
           <tbody>
             <tr><td>헤더</td><td>학교명 + 검색바 + 알림 아이콘(안읽음 점). 스크롤 시 검색바만 남기고 축소</td></tr>
+            <tr><td>검색 바</td><td>헤더 아래 전체 폭. 아이콘이 아니라 입력 바 형태로 둬 가장 먼저 눈에 들어오게 한다</td></tr>
+            <tr><td>인기 매물</td><td>찜 많은 순 6개, 가로 스크롤. 순위 배지와 찜 버튼 포함. 카테고리 필터의 영향을 받지 않는다 (FR-FIND-08)</td></tr>
+            <tr><td>섹션 제목</td><td>"지금 인기 있는 물건" / "전체 매물". 우측에 보조 라벨(찜 많은 순, 건수)</td></tr>
             <tr><td>카테고리 칩</td><td>가로 스크롤, 첫 항목 "전체". 선택 시 즉시 필터 적용</td></tr>
             <tr><td>인증 배너</td><td>미인증자에게만 노출. 카테고리 칩 아래 고정</td></tr>
             <tr><td>정렬·필터 바</td><td>좌측 정렬(최신순·저가순·인기순), 우측 필터 아이콘. 적용된 필터 수를 배지로</td></tr>
@@ -1324,6 +1336,27 @@
       </div>
 
       <div class="sc">
+        <h3><span class="k">SC-26</span>사진 전체보기</h3>
+        <p class="why"><b>목적</b> 물건 상태를 크게 확인한다. 중고거래에서 구매 판단의 대부분은 사진에서 일어나므로, <b>사진을 키워 보는 것이 방해 없이 되어야</b> 한다. <b>진입</b> 매물 상세에서 사진을 탭.</p>
+        <div class="scroller"><table>
+          <thead><tr><th>요소</th><th>규칙</th></tr></thead>
+          <tbody>
+            <tr><td>진입 신호</td><td>상세 사진 우하단에 확대 아이콘을 얹어 누를 수 있음을 알린다. 아무 표시도 없으면 누를 생각을 하지 않는다</td></tr>
+            <tr><td>배경</td><td>어두운 단색으로 채운다. 사진 외의 것이 눈에 들어오지 않게 한다</td></tr>
+            <tr><td>넘기기</td><td>좌우 스와이프, 스냅 정렬. 사진 경계에서 멈춘다</td></tr>
+            <tr><td>위치 표시</td><td>상단에 "현재 / 전체" 숫자, 하단에 점 인디케이터. 둘 다 스크롤에 실시간으로 따라간다</td></tr>
+            <tr><td>캡션</td><td>하단에 매물 제목. 여러 장을 넘기다 무엇을 보던 중인지 잊지 않게 한다</td></tr>
+            <tr><td>닫기</td><td>우상단 ×, 뒤로가기 제스처. 닫으면 보던 장이 상세 캐러셀에도 반영된다</td></tr>
+            <tr><td>확대</td><td>핀치 줌 <span class="pri could">선택</span>. 사진 한 장을 두 손가락으로 키울 수 있다</td></tr>
+          </tbody>
+        </table></div>
+        <div class="strings">
+          <div class="row"><span class="w">위치</span><span class="t">{현재} / {전체}</span></div>
+          <div class="row"><span class="w">단일 사진</span><span class="t">숫자와 점 인디케이터를 숨긴다</span></div>
+        </div>
+      </div>
+
+      <div class="sc">
         <h3><span class="k">SC-18</span>운영자 콘솔 <span class="pri could">웹</span></h3>
         <p class="why"><b>목적</b> 학생증 심사와 신고 처리를 빠르게 해치운다. 앱이 아니라 <b>키보드로 빠르게 반복 처리하는 웹 화면</b>이며, 심사 처리 속도가 서비스 체감 품질을 직접 좌우한다.</p>
         <div class="scroller"><table>
@@ -1350,6 +1383,8 @@
           <li>매물 상태별 상세 화면 3종 (판매중 / 예약중 / 거래완료)</li>
           <li>본인 매물 상세 (하단 바가 다름)</li>
           <li>OS 글자 크기 200% 적용 시 등록 화면</li>
+          <li>홈의 인기 매물 섹션 (카드 1~3위 배지 색 구분)</li>
+          <li>사진 전체보기 — 단일 사진과 여러 장 두 경우</li>
           <li>다크 모드 — 전 화면 <span class="pri could">선택</span></li>
         </ul>
       </div>
@@ -1411,6 +1446,10 @@
             <tr><td class="id">FR-FIND-04</td><td>정렬은 최신순·저가순·인기순(찜 수)을 지원한다.</td><td><span class="pri should">권장</span></td></tr>
             <tr><td class="id">FR-FIND-05</td><td>거래완료 매물은 기본 목록에서 제외하고, 필터로만 조회할 수 있다.</td><td><span class="pri must">필수</span></td></tr>
             <tr><td class="id">FR-FIND-06</td><td>사용자는 검색어를 키워드 알림으로 등록해, 조건에 맞는 매물 등록 시 푸시를 받을 수 있다.</td><td><span class="pri could">선택</span></td></tr>
+            <tr><td class="id">FR-FIND-07</td><td>홈 상단에 <strong>찜이 많은 순 상위 6개</strong>를 가로 스크롤 카드로 보여준다. 순위 배지와 찜 수를 함께 표시하며, 거래완료 매물은 제외한다.</td><td><span class="pri must">필수</span></td></tr>
+            <tr><td class="id">FR-FIND-08</td><td>인기 매물은 <strong>카테고리 필터와 무관하게</strong> 학교 전체 기준으로 뽑는다. 필터를 걸어도 이 영역은 바뀌지 않는다.</td><td><span class="pri must">필수</span></td></tr>
+            <tr><td class="id">FR-FIND-09</td><td>인기 카드의 찜 버튼은 카드 진입과 분리 동작한다. 하트를 눌러도 상세로 이동하지 않는다.</td><td><span class="pri must">필수</span></td></tr>
+            <tr><td class="id">FR-FIND-10</td><td>매물 상세에서 사진을 누르면 전체화면 뷰어가 열린다. 여러 장이면 좌우로 넘길 수 있고 현재 장수와 위치를 표시한다.</td><td><span class="pri must">필수</span></td></tr>
           </tbody>
         </table>
       </div>
@@ -1887,8 +1926,8 @@
   </main>
 
   <footer>
-    <span>공강마켓 PRD + SRS v1.5 (초안)</span>
-    <span>v1.5 — 크레딧 폐지, 수익을 안전거래 수수료로 일원화</span>
+    <span>공강마켓 PRD + SRS v1.6 (초안)</span>
+    <span>v1.6 — 홈 인기 매물, 사진 전체보기, 디자인 규격 반영</span>
     <span>다음 갱신: 17장 미결 사항 확정 후</span>
   </footer>
 </div>
