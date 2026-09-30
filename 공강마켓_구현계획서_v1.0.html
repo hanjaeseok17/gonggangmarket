@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{color-scheme:light dark;}
+  img{max-width:100%;}
+</style>
+<title>공강마켓 구현 계획서</title>
+<style>
+  :root{
+    --ground:#F1F4F0; --surface:#FFFFFF; --sunken:#E7ECE6;
+    --line:#D3DBD2; --line-soft:#E3E9E2;
+    --ink:#19211D; --ink-2:#3C4A42; --muted:#63736A;
+    --accent:#1F5D7A; --accent-soft:#E2EDF2;
+    --go:#2F6B4F; --go-soft:#E2EFE7;
+    --warn:#8A5A16; --warn-soft:#F6EBD8;
+    --stop:#8A2F2F; --stop-soft:#F6E2E2;
+    --code-bg:#12211F; --code-ink:#D6E4DE;
+    --display:"Gowun Batang","Nanum Myeongjo","Apple SD Gothic Neo",Batang,"바탕",serif;
+    --body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",system-ui,sans-serif;
+    --mono:Consolas,"D2Coding","IBM Plex Mono",ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#121714; --surface:#191F1B; --sunken:#1F2621;
+      --line:#2F3A33; --line-soft:#252E28;
+      --ink:#E7EDE8; --ink-2:#C2CEC5; --muted:#93A399;
+      --accent:#7FB8D4; --accent-soft:#1B2830;
+      --go:#7FC3A0; --go-soft:#1B2A22;
+      --warn:#D9AE6A; --warn-soft:#2A2418;
+      --stop:#D99898; --stop-soft:#2C1D1D;
+      --code-bg:#0D1614; --code-ink:#C8DAD3;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#121714; --surface:#191F1B; --sunken:#1F2621;
+    --line:#2F3A33; --line-soft:#252E28;
+    --ink:#E7EDE8; --ink-2:#C2CEC5; --muted:#93A399;
+    --accent:#7FB8D4; --accent-soft:#1B2830;
+    --go:#7FC3A0; --go-soft:#1B2A22;
+    --warn:#D9AE6A; --warn-soft:#2A2418;
+    --stop:#D99898; --stop-soft:#2C1D1D;
+    --code-bg:#0D1614; --code-ink:#C8DAD3;
+  }
+
+  body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.75;}
+  .shell{max-width:1180px;margin:0 auto;padding:0 20px 96px;display:grid;
+    grid-template-columns:210px minmax(0,1fr);gap:44px;align-items:start;}
+  @media (max-width:920px){.shell{grid-template-columns:minmax(0,1fr);gap:24px;}}
+
+  .cover{grid-column:1/-1;border-bottom:1px solid var(--line);padding:56px 0 32px;
+    display:flex;flex-direction:column;gap:18px;}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;color:var(--accent);text-transform:uppercase;}
+  .cover h1{font-family:var(--display);font-size:clamp(36px,6vw,58px);font-weight:700;line-height:1.08;letter-spacing:-.01em;}
+  .cover .lede{font-size:17px;color:var(--ink-2);max-width:64ch;line-height:1.7;}
+  .headline{display:flex;flex-wrap:wrap;gap:1px;background:var(--line-soft);border:1px solid var(--line);
+    border-radius:3px;overflow:hidden;width:fit-content;margin-top:4px;}
+  .headline div{background:var(--surface);padding:13px 22px;display:flex;flex-direction:column;gap:2px;}
+  .headline dt{font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-family:var(--mono);}
+  .headline dd{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+  .headline dd small{font-size:12.5px;font-weight:400;color:var(--muted);margin-left:3px;}
+
+  nav.toc{position:sticky;top:24px;font-size:13px;border-left:2px solid var(--line);padding-left:14px;
+    display:flex;flex-direction:column;gap:1px;}
+  nav.toc b{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);font-weight:500;padding-bottom:8px;}
+  nav.toc a{color:var(--ink-2);text-decoration:none;padding:3px 0;line-height:1.45;}
+  nav.toc a:hover{color:var(--accent);}
+  nav.toc a .n{font-family:var(--mono);font-size:11px;color:var(--muted);margin-right:7px;}
+  @media (max-width:920px){nav.toc{position:static;border-left:none;border-top:1px solid var(--line);padding:16px 0 0;
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2px 16px;}}
+
+  main{min-width:0;display:flex;flex-direction:column;gap:52px;padding-top:44px;}
+  section{scroll-margin-top:20px;display:flex;flex-direction:column;gap:16px;}
+  h2{font-family:var(--display);font-size:27px;font-weight:700;line-height:1.3;padding-bottom:9px;
+    border-bottom:1px solid var(--line);text-wrap:balance;}
+  h2 .n{font-family:var(--mono);font-size:13px;color:var(--accent);margin-right:12px;font-weight:500;}
+  h2 .md{float:right;font-family:var(--mono);font-size:13px;color:var(--muted);font-weight:500;}
+  h3{font-size:16px;font-weight:700;margin-top:12px;}
+  p{max-width:70ch;color:var(--ink-2);}
+  main ul,main ol{padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:70ch;color:var(--ink-2);}
+  li::marker{color:var(--muted);}
+  strong{color:var(--ink);font-weight:700;}
+  code{font-family:var(--mono);font-size:.88em;background:var(--sunken);padding:1px 5px;border-radius:3px;color:var(--ink);}
+
+  .scroller{overflow-x:auto;border:1px solid var(--line);border-radius:3px;background:var(--surface);}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:620px;}
+  caption{text-align:left;font-size:12px;color:var(--muted);padding:0 0 7px;font-family:var(--mono);letter-spacing:.05em;}
+  th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--line-soft);vertical-align:top;line-height:1.55;}
+  thead th{background:var(--sunken);font-size:11.5px;letter-spacing:.09em;color:var(--muted);font-weight:500;white-space:nowrap;}
+  tbody tr:last-child td{border-bottom:none;}
+  td.id,th.id{font-family:var(--mono);font-size:12px;white-space:nowrap;color:var(--accent);}
+  td.md,th.md{font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;font-weight:700;}
+  tfoot td{background:var(--sunken);font-weight:700;border-top:1px solid var(--line);}
+  tr.sum td{background:var(--sunken);font-weight:700;}
+
+  .pill{font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:2px;letter-spacing:.04em;white-space:nowrap;}
+  .pill.core{background:var(--accent-soft);color:var(--accent);}
+  .pill.later{background:var(--sunken);color:var(--muted);}
+  .pill.risk{background:var(--warn-soft);color:var(--warn);}
+
+  .callout{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:0 3px 3px 0;padding:16px 20px;display:flex;flex-direction:column;gap:9px;}
+  .callout.go{border-left-color:var(--go);}
+  .callout.warn{border-left-color:var(--warn);}
+  .callout.stop{border-left-color:var(--stop);}
+  .callout h3{margin:0;font-size:14.5px;}
+  .callout p,.callout ul{font-size:13.5px;max-width:66ch;}
+
+  .bars{display:flex;flex-direction:column;gap:7px;background:var(--surface);
+    border:1px solid var(--line);border-radius:3px;padding:18px 20px;}
+  .bar{display:flex;align-items:center;gap:11px;font-size:12.5px;}
+  .bar .nm{width:120px;flex:none;color:var(--ink-2);}
+  .bar .tk{flex:1;height:16px;background:var(--sunken);border-radius:2px;position:relative;overflow:hidden;}
+  .bar .fl{position:absolute;top:0;bottom:0;background:var(--accent);opacity:.82;}
+  .bar .fl.later{background:var(--muted);opacity:.45;}
+  .bar .vl{width:52px;flex:none;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;}
+  .bar .wk{width:66px;flex:none;text-align:right;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;}
+
+  pre{background:var(--code-bg);color:var(--code-ink);border-radius:4px;padding:16px 18px;overflow-x:auto;
+    font-family:var(--mono);font-size:12.5px;line-height:1.72;}
+  pre .c{color:#7E9A90;}
+
+  footer{grid-column:1/-1;border-top:1px solid var(--line);margin-top:64px;padding-top:20px;
+    font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 24px;}
+  a{color:var(--accent);}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <header class="cover">
+    <span class="eyebrow">Implementation Plan · v1.0</span>
+    <h1>공강마켓 구현 계획서</h1>
+    <p class="lede">프로토타입과 PRD/SRS v1.6에 적힌 전부를 <strong>개발자 1명</strong>이 만든다고 가정한 일정이다. 설계서의 원칙(테스트 선작성, 수직 한 줄씩 완성)을 지키는 것을 전제로 산정했다.</p>
+    <dl class="headline">
+      <div><dt>총 공수</dt><dd>92 <small>MD</small></dd></div>
+      <div><dt>기간</dt><dd>약 19 <small>주</small></dd></div>
+      <div><dt>인원</dt><dd>1 <small>명</small></dd></div>
+      <div><dt>축소 시</dt><dd>57 <small>MD · 12주</small></dd></div>
+    </dl>
+  </header>
+
+  <nav class="toc">
+    <b>목차</b>
+    <a href="#s1"><span class="n">01</span>전제와 산정</a>
+    <a href="#s2"><span class="n">02</span>전체 일정</a>
+    <a href="#s3"><span class="n">03</span>S0 기반</a>
+    <a href="#s4"><span class="n">04</span>S1 도메인</a>
+    <a href="#s5"><span class="n">05</span>S2 인증</a>
+    <a href="#s6"><span class="n">06</span>S3 매물</a>
+    <a href="#s7"><span class="n">07</span>S4 채팅</a>
+    <a href="#s8"><span class="n">08</span>S5 제안</a>
+    <a href="#s9"><span class="n">09</span>S6 안전거래</a>
+    <a href="#s10"><span class="n">10</span>S7 신뢰·안전</a>
+    <a href="#s11"><span class="n">11</span>S8 운영 콘솔</a>
+    <a href="#s12"><span class="n">12</span>S9 마감</a>
+    <a href="#s13"><span class="n">13</span>일하는 방식</a>
+    <a href="#s14"><span class="n">14</span>리스크</a>
+    <a href="#s15"><span class="n">15</span>범위 조정</a>
+  </nav>
+
+  <main>
+
+    <!-- 01 -->
+    <section id="s1">
+      <h2><span class="n">01</span>전제와 산정</h2>
+
+      <h3>1.1 전제</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>항목</th><th>가정</th><th>어긋나면</th></tr></thead>
+          <tbody>
+            <tr><td>인원</td><td>개발자 1명이 앱·서버·콘솔을 모두 담당</td><td>—</td></tr>
+            <tr><td>1 MD</td><td>하루 8시간 중 <strong>순수 개발 6시간</strong>. 나머지는 조사·회의·환경 문제</td><td>학업 병행이면 실제 소요일은 1.5~2배</td></tr>
+            <tr><td>숙련도</td><td>Kotlin·Compose·TypeScript를 <strong>이미 쓸 줄 안다</strong></td><td>학습이 필요하면 <strong>+30%</strong> (약 28 MD)</td></tr>
+            <tr><td>설계</td><td>설계서 v1.0의 구조를 그대로 따른다</td><td>구조를 즉흥으로 정하면 중반에 재작업이 생긴다</td></tr>
+            <tr><td>TDD</td><td>도메인·유스케이스는 테스트 선작성</td><td>생략하면 초반 20% 빠르고 후반 50% 느려진다</td></tr>
+            <tr><td>디자인</td><td>프로토타입이 곧 시안. 별도 디자인 작업 없음</td><td>새 시안이 오면 UI 공수 재산정</td></tr>
+            <tr><td>결제</td><td>PG는 <strong>샌드박스</strong>까지만. 실계약·심사는 범위 밖</td><td>실연동은 별도 협의 기간 필요</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>1.2 산정 방식</h3>
+      <p>각 작업을 <strong>서버 · 앱 · 테스트</strong> 세 갈래로 쪼개 따로 잡고 합쳤다. 화면 하나는 평균 0.5~1.0 MD, API 하나는 0.3~0.5 MD, 도메인 규칙 하나는 테스트 포함 0.2 MD를 기준으로 삼았다.</p>
+      <ul>
+        <li><strong>TDD 계수를 따로 붙이지 않았다</strong> — 테스트 작성 시간을 각 작업에 이미 포함했다. 테스트를 빼도 공수가 줄지 않는다고 본다</li>
+        <li><strong>버퍼 10 MD</strong>를 마지막에 따로 뒀다. 작업마다 여유를 조금씩 섞으면 그 여유는 반드시 사라진다</li>
+        <li>0.5 MD 미만 작업은 인접 작업에 합쳤다. 쪼갤수록 정확해 보이지만 관리 비용만 늘어난다</li>
+      </ul>
+
+      <h3>1.3 구현 순서의 원칙</h3>
+      <div class="callout">
+        <h3>기능 단위가 아니라 수직 한 줄씩</h3>
+        <p>"서버 전부 → 앱 전부"가 아니라 <strong>도메인 → 유스케이스 → API → 화면</strong>을 한 기능씩 끝까지 관통한다. 첫 줄(S1+S3 홈)이 끝나면 구조가 검증되고, 그 다음부터는 같은 모양을 반복하므로 속도가 붙는다. 반대로 서버를 다 만들고 앱을 시작하면 <strong>중반까지 눈에 보이는 결과가 없어</strong> 설계 오류를 늦게 발견한다.</p>
+      </div>
+    </section>
+
+    <!-- 02 -->
+    <section id="s2">
+      <h2><span class="n">02</span>전체 일정</h2>
+
+      <div class="bars">
+        <div class="bar"><span class="nm">S0 기반</span><span class="tk"><span class="fl" style="left:0%;width:7.1%"></span></span><span class="vl">6.5</span><span class="wk">1~2주</span></div>
+        <div class="bar"><span class="nm">S1 도메인</span><span class="tk"><span class="fl" style="left:7.1%;width:5.4%"></span></span><span class="vl">5.0</span><span class="wk">2주</span></div>
+        <div class="bar"><span class="nm">S2 인증</span><span class="tk"><span class="fl" style="left:12.5%;width:8.7%"></span></span><span class="vl">8.0</span><span class="wk">3~4주</span></div>
+        <div class="bar"><span class="nm">S3 매물</span><span class="tk"><span class="fl" style="left:21.2%;width:16.3%"></span></span><span class="vl">15.0</span><span class="wk">4~7주</span></div>
+        <div class="bar"><span class="nm">S4 채팅</span><span class="tk"><span class="fl" style="left:37.5%;width:9.2%"></span></span><span class="vl">8.5</span><span class="wk">7~9주</span></div>
+        <div class="bar"><span class="nm">S5 제안</span><span class="tk"><span class="fl" style="left:46.7%;width:3.3%"></span></span><span class="vl">3.0</span><span class="wk">9주</span></div>
+        <div class="bar"><span class="nm">S6 안전거래</span><span class="tk"><span class="fl" style="left:50%;width:14.1%"></span></span><span class="vl">13.0</span><span class="wk">10~12주</span></div>
+        <div class="bar"><span class="nm">S7 신뢰·안전</span><span class="tk"><span class="fl" style="left:64.1%;width:4.9%"></span></span><span class="vl">4.5</span><span class="wk">13주</span></div>
+        <div class="bar"><span class="nm">S8 운영 콘솔</span><span class="tk"><span class="fl later" style="left:69%;width:6%"></span></span><span class="vl">5.5</span><span class="wk">14주</span></div>
+        <div class="bar"><span class="nm">S9 마감</span><span class="tk"><span class="fl" style="left:75%;width:13.6%"></span></span><span class="vl">12.5</span><span class="wk">15~17주</span></div>
+        <div class="bar"><span class="nm">버퍼</span><span class="tk"><span class="fl later" style="left:88.6%;width:10.9%"></span></span><span class="vl">10.0</span><span class="wk">18~19주</span></div>
+      </div>
+
+      <div class="scroller">
+        <table>
+          <caption>단계별 요약</caption>
+          <thead><tr><th class="id">단계</th><th>내용</th><th class="md">MD</th><th class="md">누적</th><th>이 단계가 끝나면</th></tr></thead>
+          <tbody>
+            <tr><td class="id">S0</td><td>프로젝트 골격, CI, 디자인 시스템, 서버 골격</td><td class="md">6.5</td><td class="md">6.5</td><td>빈 화면이 뜨고 아키텍처 테스트가 위반을 잡는다</td></tr>
+            <tr><td class="id">S1</td><td>도메인 모델과 규칙 (TDD)</td><td class="md">5.0</td><td class="md">11.5</td><td>규칙 테스트 약 60건이 초록</td></tr>
+            <tr><td class="id">S2</td><td>가입·이메일 인증·학생증 심사</td><td class="md">8.0</td><td class="md">19.5</td><td>실제 계정으로 2단계 인증이 된다</td></tr>
+            <tr><td class="id">S3</td><td>매물 등록·목록·검색·상세·사진</td><td class="md">15.0</td><td class="md">34.5</td><td><strong>물건을 올리고 찾을 수 있다 — 첫 데모 가능</strong></td></tr>
+            <tr><td class="id">S4</td><td>채팅, 푸시 알림</td><td class="md">8.5</td><td class="md">43.0</td><td>둘이 대화하고 약속을 잡는다</td></tr>
+            <tr><td class="id">S5</td><td>가격 제안</td><td class="md">3.0</td><td class="md">46.0</td><td>제안·수락으로 가격이 정해진다</td></tr>
+            <tr><td class="id">S6</td><td>계좌, 안전거래, 문고리, 정산</td><td class="md">13.0</td><td class="md">59.0</td><td>결제부터 정산까지 한 바퀴가 돈다</td></tr>
+            <tr><td class="id">S7</td><td>신고·차단·제재, 후기·신뢰점수</td><td class="md">4.5</td><td class="md">63.5</td><td>스토어 심사 요건을 만족한다</td></tr>
+            <tr><td class="id">S8</td><td>운영자 콘솔 (웹)</td><td class="md">5.5</td><td class="md">69.0</td><td>학생증 심사와 신고 처리가 운영 가능해진다</td></tr>
+            <tr><td class="id">S9</td><td>영어·접근성·성능·스토어 등록·안정화</td><td class="md">12.5</td><td class="md">81.5</td><td>출시 가능 상태</td></tr>
+            <tr class="sum"><td class="id">버퍼</td><td>지연·재작업 대비 (총량의 12%)</td><td class="md">10.0</td><td class="md">91.5</td><td>—</td></tr>
+          </tbody>
+          <tfoot><tr><td colspan="2">합계</td><td class="md">92</td><td class="md">주 5일 기준 <strong>약 19주</strong></td><td>—</td></tr></tfoot>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <h3>이 숫자를 읽는 법</h3>
+        <p>92 MD는 <strong>순수 개발일</strong>이다. 학기 중 수업을 들으며 하루 3~4시간씩 쓴다면 달력으로는 <strong>8~10개월</strong>이 걸린다. 방학에 집중한다면 19주에 가까워진다. 일정을 약속할 때는 반드시 실제 투입 가능 시간으로 환산해서 말해야 한다.</p>
+      </div>
+    </section>
+
+    <!-- 03 -->
+    <section id="s3">
+      <h2><span class="n">03</span>S0 기반<span class="md">6.5 MD</span></h2>
+      <p>여기서 만든 골격이 이후 모든 작업의 본보기가 된다. 서두르면 전 구간에서 대가를 치른다.</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>작업</th><th class="md">MD</th><th>완료 기준</th></tr></thead>
+          <tbody>
+            <tr><td class="id">W-01</td><td>저장소·Gradle 멀티모듈·버전 카탈로그 구성</td><td class="md">1.0</td><td><code>domain</code>이 안드로이드 의존성 없이 빌드된다</td></tr>
+            <tr><td class="id">W-02</td><td>Hilt 배선, 앱 스켈레톤, 네비게이션 뼈대</td><td class="md">0.5</td><td>탭 4개가 빈 화면으로 전환된다</td></tr>
+            <tr><td class="id">W-03</td><td>Konsist 아키텍처 테스트, detekt 규칙</td><td class="md">1.0</td><td>도메인에 <code>android.*</code>를 넣으면 테스트가 실패한다</td></tr>
+            <tr><td class="id">W-04</td><td>디자인 시스템 — 색·타이포 토큰, 공통 컴포넌트 8종</td><td class="md">2.0</td><td>프로토타입의 카드·칩·시트·토스트가 재현된다</td></tr>
+            <tr><td class="id">W-05</td><td>서버 골격 — Wrangler, Hono, D1 마이그레이션, Vitest</td><td class="md">1.5</td><td><code>/health</code>가 응답하고 테스트가 workerd에서 돈다</td></tr>
+            <tr><td class="id">W-06</td><td>공통 Result 타입, 오류 코드 규약, CI 파이프라인</td><td class="md">0.5</td><td>PR마다 테스트·린트가 자동 실행된다</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 04 -->
+    <section id="s4">
+      <h2><span class="n">04</span>S1 도메인<span class="md">5.0 MD</span></h2>
+      <p>화면도 서버도 없이 규칙만 만든다. 설계서 13장의 테스트 47건을 <strong>먼저 쓰고</strong> 통과시킨다.</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>작업</th><th class="md">MD</th><th>완료 기준</th></tr></thead>
+          <tbody>
+            <tr><td class="id">W-07</td><td>Money·FeePolicy·값 객체 (T-FEE, T-MON)</td><td class="md">1.0</td><td>수수료 경계값 테스트 통과</td></tr>
+            <tr><td class="id">W-08</td><td>Item — 불변식과 상태 전이</td><td class="md">1.0</td><td>거래완료가 최종 상태임이 테스트로 고정</td></tr>
+            <tr><td class="id">W-09</td><td>Offer — 가격 검증, 24시간 3회 정책 (T-OFF)</td><td class="md">1.0</td><td>고정 시계로 만료 테스트 통과</td></tr>
+            <tr><td class="id">W-10</td><td>Escrow — 상태 머신, 자동 확정 기한 (T-ESC)</td><td class="md">1.5</td><td>전이표 전 경로 테스트 통과</td></tr>
+            <tr><td class="id">W-11</td><td>User·VerifyLevel, 포트 인터페이스 정의</td><td class="md">0.5</td><td>등급별 허용 행위가 함수로 표현된다</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout go">
+        <h3>여기서 서버와 앱이 같은 표를 쓴다</h3>
+        <p>같은 테스트 케이스 표(T-FEE·T-OFF·T-ESC)를 TypeScript로도 작성한다. 앱과 서버의 규칙이 어긋나면 <strong>양쪽 테스트 중 하나가 빨개진다</strong>. 이 중복이 설계서 ADR-6의 위험을 막는 장치다.</p>
+      </div>
+    </section>
+
+    <!-- 05 -->
+    <section id="s5">
+      <h2><span class="n">05</span>S2 인증<span class="md">8.0 MD</span></h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>작업</th><th>구분</th><th class="md">MD</th><th>완료 기준</th></tr></thead>
+          <tbody>
+            <tr><td class="id">W-12</td><td>가입·로그인·세션(JWT 회전)·휴대폰 인증</td><td>서버</td><td class="md">2.5</td><td>토큰 만료·갱신 테스트 통과</td></tr>
+            <tr><td class="id">W-13</td><td>학교 이메일 코드 발송·검증, 재발송 제한</td><td>서버</td><td class="md">1.0</td><td>5회 오입력 시 무효화</td></tr>
+            <tr><td class="id">W-14</td><td>학생증 업로드(R2 서명 URL), 심사 상태 API, 승인 시 원본 삭제</td><td>서버</td><td class="md">1.5</td><td>T-SV-05 통과</td></tr>
+            <tr><td class="id">W-15</td><td>로그인·가입 화면 (SC-01·02)</td><td>앱</td><td class="md">1.5</td><td>약관 분리 동의, 실시간 유효성</td></tr>
+            <tr><td class="id">W-16</td><td>인증 센터·학생증 제출·마스킹 도구 (SC-03·04·22)</td><td>앱</td><td class="md">2.0</td><td>마스킹 후에만 제출 버튼 활성</td></tr>
+            <tr><td class="id">W-17</td><td>등급별 권한 게이팅 공통 처리</td><td>앱</td><td class="md">0.5</td><td>T-UI-02 통과 — 버튼을 숨기지 않고 안내</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 06 -->
+    <section id="s6">
+      <h2><span class="n">06</span>S3 매물<span class="md">15.0 MD</span></h2>
+      <p>가장 큰 단계이자 <strong>첫 데모가 가능해지는 지점</strong>이다. 이 단계가 끝나면 실제로 써볼 수 있는 물건이 나온다.</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>작업</th><th>구분</th><th class="md">MD</th><th>완료 기준</th></tr></thead>
+          <tbody>
+            <tr><td class="id">W-18</td><td>매물 CRUD, 목록 커서 페이지네이션, 필터·정렬</td><td>서버</td><td class="md">2.5</td><td>학교 격리 테스트(T-SV-06) 통과</td></tr>
+            <tr><td class="id">W-19</td><td>검색 색인(제목·설명·과목명), 카테고리·장소 마스터</td><td>서버</td><td class="md">1.5</td><td>과목명으로 교재가 검색된다</td></tr>
+            <tr><td class="id">W-20</td><td>이미지 업로드 서명 URL, EXIF 제거, 썸네일 규칙</td><td>서버</td><td class="md">1.0</td><td>위치정보가 제거된다</td></tr>
+            <tr><td class="id">W-21</td><td>인기 매물 집계 API (찜 순 상위 6)</td><td>서버</td><td class="md">0.5</td><td>FR-FIND-07·08 충족</td></tr>
+            <tr><td class="id">W-22</td><td>홈 — 검색 바, 인기 가로 스크롤, 목록, 필터·정렬 (SC-05)</td><td>앱</td><td class="md">2.5</td><td>빈 화면·로딩·오류 3종 구현</td></tr>
+            <tr><td class="id">W-23</td><td>검색 화면 (SC-06)</td><td>앱</td><td class="md">1.0</td><td>최근·추천 검색어, 결과 없음 처리</td></tr>
+            <tr><td class="id">W-24</td><td>매물 상세 + 사진 전체보기 (SC-07·26)</td><td>앱</td><td class="md">2.0</td><td>T-UI-03 통과</td></tr>
+            <tr><td class="id">W-25</td><td>등록 폼 — 사진·카테고리·가격·장소·옵션 (SC-08)</td><td>앱</td><td class="md">2.5</td><td>임시저장 복원, 금지어 차단</td></tr>
+            <tr><td class="id">W-26</td><td>찜·찜 목록·내 매물 (SC-15)</td><td>앱</td><td class="md">1.0</td><td>가격 인하 표시</td></tr>
+            <tr><td class="id">W-27</td><td>오프라인 목록 캐시 (Room)</td><td>앱</td><td class="md">0.5</td><td>T-AD-03 통과</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 07 -->
+    <section id="s7">
+      <h2><span class="n">07</span>S4 채팅<span class="md">8.5 MD</span></h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>작업</th><th>구분</th><th class="md">MD</th><th>완료 기준</th></tr></thead>
+          <tbody>
+            <tr><td class="id">W-28</td><td>Durable Object 채팅방, WebSocket, 메시지 저장</td><td>서버</td><td class="md">2.0</td><td>방 생성 유일성 (T-UC-07)</td></tr>
+            <tr><td class="id">W-29</td><td>재연결 동기화(커서), 읽음 처리</td><td>서버</td><td class="md">1.0</td><td>끊긴 동안의 메시지가 누락되지 않는다</td></tr>
+            <tr><td class="id">W-30</td><td>채팅방 목록·대화 화면·정형 문구 (SC-09·10)</td><td>앱</td><td class="md">2.5</td><td>전송 실패 재시도, 선입금 경고</td></tr>
+            <tr><td class="id">W-31</td><td>약속 카드 제안·수락, 시스템 메시지</td><td>앱+서버</td><td class="md">1.0</td><td>확정 시 알림 예약</td></tr>
+            <tr><td class="id">W-32</td><td>FCM 발송(Queues), 토큰 관리, 알림 설정</td><td>앱+서버</td><td class="md">2.0</td><td>야간 차단, 유형별 토글 동작</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 08 -->
+    <section id="s8">
+      <h2><span class="n">08</span>S5 제안<span class="md">3.0 MD</span></h2>
+      <p>도메인(W-09)이 이미 끝나 있어 가장 싸게 붙는 기능이다. <strong>수직 구조의 이득이 처음으로 눈에 보이는 지점</strong>이다.</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>작업</th><th>구분</th><th class="md">MD</th><th>완료 기준</th></tr></thead>
+          <tbody>
+            <tr><td class="id">W-33</td><td>제안 생성·응답 API, 횟수 제한, 수락 시 매물 갱신</td><td>서버</td><td class="md">1.5</td><td>수락 시 나머지 자동 거절</td></tr>
+            <tr><td class="id">W-34</td><td>제안 시트(추천 금액), 받은 제안 관리 (SC-19)</td><td>앱</td><td class="md">1.5</td><td>희망가 이상 입력 차단</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 09 -->
+    <section id="s9">
+      <h2><span class="n">09</span>S6 안전거래<span class="md">13.0 MD</span></h2>
+      <div class="callout stop">
+        <h3>가장 위험한 단계</h3>
+        <p>돈이 실제로 움직인다. 여기서의 버그는 사용자 손해로 직결되고 되돌리기 어렵다. <strong>이 단계만큼은 테스트 없이 한 줄도 쓰지 않는다.</strong> 멱등성·대사·상태 전이 테스트를 먼저 쓰고 구현한다.</p>
+      </div>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>작업</th><th>구분</th><th class="md">MD</th><th>완료 기준</th></tr></thead>
+          <tbody>
+            <tr><td class="id">W-35</td><td>정산 계좌 등록·암호화 저장·마스킹 조회</td><td>서버</td><td class="md">1.0</td><td>전체 번호가 응답에 절대 없다</td></tr>
+            <tr><td class="id">W-36</td><td>에스크로 생성·전이 API, 멱등성 키, 원장 기록</td><td>서버</td><td class="md">3.0</td><td>T-SV-01·02 통과</td></tr>
+            <tr><td class="id">W-37</td><td>PG 어댑터(샌드박스), 결제·환불</td><td>서버</td><td class="md">2.5</td><td>Fake와 실제 어댑터가 같은 테스트를 통과</td></tr>
+            <tr><td class="id">W-38</td><td>자동 확정 Cron, 정산 배치, 일일 대사</td><td>서버</td><td class="md">1.5</td><td>T-SV-04 잔액 일치</td></tr>
+            <tr><td class="id">W-39</td><td>안전결제 화면 — 금액 분리 표시, 결제 수단 (SC-23)</td><td>앱</td><td class="md">1.5</td><td>수수료가 물건값과 분리돼 보인다</td></tr>
+            <tr><td class="id">W-40</td><td>진행 화면 3단계, 확정·취소·분쟁 (SC-24)</td><td>앱</td><td class="md">1.5</td><td>역할별 버튼 분기 정확</td></tr>
+            <tr><td class="id">W-41</td><td>문고리 — 장소 선택, 증빙 사진 필수, 위치 전달 (SC-25)</td><td>앱+서버</td><td class="md">1.0</td><td>T-AC-24 사진 없이 전달 불가</td></tr>
+            <tr><td class="id">W-42</td><td>계좌 등록 화면, 안전거래 내역 (SC-22)</td><td>앱</td><td class="md">1.0</td><td>계좌 없으면 안전결제 켜기 차단</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section id="s10">
+      <h2><span class="n">10</span>S7 신뢰·안전<span class="md">4.5 MD</span></h2>
+      <p>스토어 심사에서 <strong>없으면 반려되는</strong> 항목이 여기 모여 있다. 출시 직전으로 미루면 위험하다.</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>작업</th><th>구분</th><th class="md">MD</th><th>완료 기준</th></tr></thead>
+          <tbody>
+            <tr><td class="id">W-43</td><td>신고·차단 API, 제재 부여, 사기 신고 시 채팅 보류</td><td>서버</td><td class="md">1.5</td><td>차단 시 양방향 비노출</td></tr>
+            <tr><td class="id">W-44</td><td>신고·차단 UI (SC-16)</td><td>앱</td><td class="md">1.0</td><td>T-UI 차단 후 목록 반영</td></tr>
+            <tr><td class="id">W-45</td><td>거래 후기, 신뢰 점수 산출·표시</td><td>앱+서버</td><td class="md">2.0</td><td>거래당 양측 1건 제한</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 11 -->
+    <section id="s11">
+      <h2><span class="n">11</span>S8 운영 콘솔<span class="md">5.5 MD</span></h2>
+      <p>웹 화면이다. 심사 처리 속도가 서비스 체감 품질을 직접 좌우하므로 <strong>키보드만으로 빠르게 반복 처리</strong>되는 것이 목표다.</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>작업</th><th class="md">MD</th><th>완료 기준</th></tr></thead>
+          <tbody>
+            <tr><td class="id">W-46</td><td>콘솔 골격, 운영자 인증(TOTP)</td><td class="md">1.0</td><td>2단계 인증 없이 접근 불가</td></tr>
+            <tr><td class="id">W-47</td><td>학생증 심사 큐 — 키보드 단축키 처리</td><td class="md">2.0</td><td>A/R/↑↓로 연속 처리된다</td></tr>
+            <tr><td class="id">W-48</td><td>신고 처리, 계정·매물 관리, 분쟁 종결</td><td class="md">1.5</td><td>모든 조치가 감사 로그에 남는다</td></tr>
+            <tr><td class="id">W-49</td><td>거래 장소 관리, 지표 대시보드</td><td class="md">1.0</td><td>3장 지표가 일·주 단위로 보인다</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 12 -->
+    <section id="s12">
+      <h2><span class="n">12</span>S9 마감<span class="md">12.5 MD</span></h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="id">ID</th><th>작업</th><th class="md">MD</th><th>완료 기준</th></tr></thead>
+          <tbody>
+            <tr><td class="id">W-50</td><td>i18n 구조 정비, 하드코딩 제거, 영어 리소스 전량</td><td class="md">2.0</td><td>미번역 키 검사 테스트 통과</td></tr>
+            <tr><td class="id">W-51</td><td>접근성 — 글자 200%, 대비 4.5:1, 대체 텍스트</td><td class="md">1.5</td><td>T-UI-04 통과</td></tr>
+            <tr><td class="id">W-52</td><td>성능 — 콜드 스타트 3초, 목록 p95 300ms, 이미지 WebP</td><td class="md">1.0</td><td>NFR-PERF 전 항목 충족</td></tr>
+            <tr><td class="id">W-53</td><td>E2E 5개 시나리오, 회귀 테스트 정리</td><td class="md">2.0</td><td>T-E2E-01 인증~확정 한 바퀴</td></tr>
+            <tr><td class="id">W-54</td><td>보안 점검 — OWASP Mobile Top 10 자체 점검</td><td class="md">1.0</td><td>NFR-SEC-05 충족</td></tr>
+            <tr><td class="id">W-55</td><td>스토어 등록물 — 아이콘, 스크린샷, 설명, 개인정보 양식</td><td class="md">1.0</td><td>심사 제출 가능</td></tr>
+            <tr><td class="id">W-56</td><td>배포 파이프라인, 크래시·로그 수집, 운영 문서</td><td class="md">1.5</td><td>내부 테스트 트랙 배포 성공</td></tr>
+            <tr><td class="id">W-57</td><td>베타 피드백 반영, 버그 수정</td><td class="md">2.5</td><td>치명 결함 0건</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 13 -->
+    <section id="s13">
+      <h2><span class="n">13</span>일하는 방식</h2>
+
+      <h3>13.1 하루의 리듬</h3>
+      <pre><code><span class="c">오전  어제 남긴 실패 테스트부터 시작 — 문맥 복구가 가장 빠른 방법이다</span>
+      Red → Green → Refactor 사이클을 작게 반복
+<span class="c">오후  화면·통합 작업 (집중력이 덜 필요한 배선 작업)</span>
+<span class="c">마감  반드시 초록 상태로 커밋하고 끝낸다</span>
+      내일 할 일을 <span class="c">실패하는 테스트 한 개</span>로 남겨둔다</code></pre>
+
+      <h3>13.2 작업 하나를 끝내는 절차</h3>
+      <ol>
+        <li>해당 작업의 테스트 케이스를 설계서 13장에서 찾아 <strong>먼저 작성</strong> (없으면 새로 정의)</li>
+        <li>도메인 → 유스케이스 → 어댑터 → 화면 순으로 통과시킨다</li>
+        <li>PRD의 대응 FR 번호를 커밋 메시지에 적는다 (<code>FR-ESC-06 구매 확정</code>)</li>
+        <li>완료 기준 열의 조건을 눈으로 확인한다</li>
+        <li>초록 상태에서 커밋·푸시</li>
+      </ol>
+
+      <h3>13.3 진척 관리</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>주기</th><th>확인</th><th>대응</th></tr></thead>
+          <tbody>
+            <tr><td>매일</td><td>완료한 작업의 MD 합계</td><td>—</td></tr>
+            <tr><td>매주</td><td>계획 대비 누적 MD, 남은 작업</td><td>2주 연속 20% 이상 지연 시 <strong>범위를 줄인다</strong>. 야근으로 메우지 않는다</td></tr>
+            <tr><td>단계 종료</td><td>완료 기준 전 항목, 테스트 초록</td><td>미달이면 다음 단계로 넘어가지 않는다</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <h3>진척은 "만든 화면 수"가 아니라 "통과한 테스트 수"로 센다</h3>
+        <p>화면은 80% 완성처럼 보이기 쉽지만 테스트는 통과하거나 실패하거나 둘 중 하나다. 주간 보고에는 <strong>초록 테스트 수와 완료 기준 충족 여부</strong>를 적는다.</p>
+      </div>
+    </section>
+
+    <!-- 14 -->
+    <section id="s14">
+      <h2><span class="n">14</span>리스크</h2>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>리스크</th><th>영향</th><th>징후</th><th>대응</th></tr></thead>
+          <tbody>
+            <tr><td><strong>PG 계약·심사 지연</strong></td><td class="md">치명</td><td>S6 시작 시점에 결정이 없음</td><td>결제 어댑터를 Fake로 두고 나머지를 먼저 완성. 실연동은 마지막에 갈아끼운다</td></tr>
+            <tr><td><strong>학습 곡선</strong> (Compose·DO·D1)</td><td class="md">높음</td><td>S0~S1이 예상의 1.5배</td><td>초기 지연은 그대로 전 구간에 비례한다. 2주차에 재산정한다</td></tr>
+            <tr><td><strong>Durable Objects 난이도</strong></td><td class="md">중간</td><td>W-28에서 이틀 이상 막힘</td><td>폴링 방식(3초 간격)으로 먼저 출시하고 나중에 교체. 채팅 UI는 그대로 쓴다</td></tr>
+            <tr><td><strong>D1 한계</strong> (검색·용량)</td><td class="md">중간</td><td>한국어 검색 품질 불만</td><td>접두어 색인 테이블을 직접 만든다. 어댑터 안이라 영향 범위가 좁다</td></tr>
+            <tr><td><strong>범위 증가</strong></td><td class="md">높음</td><td>"이것도 넣자"가 반복됨</td><td>PRD에 없는 요구는 다음 버전으로. 문서 개정 없이 구현하지 않는다</td></tr>
+            <tr><td><strong>혼자 하는 데서 오는 품질 저하</strong></td><td class="md">중간</td><td>리뷰 없이 머지가 쌓임</td><td>테스트와 아키텍처 검사가 리뷰어 역할을 한다. 주 1회 스스로 코드 읽는 시간 확보</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 15 -->
+    <section id="s15">
+      <h2><span class="n">15</span>범위 조정</h2>
+      <p>19주가 부담이면 아래 순서로 잘라낸다. <strong>위에서부터 잘라야</strong> 서비스가 성립한다.</p>
+
+      <div class="scroller">
+        <table>
+          <caption>축소안 — 57 MD · 약 12주</caption>
+          <thead><tr><th>결정</th><th>절감</th><th>잃는 것</th><th>판단</th></tr></thead>
+          <tbody>
+            <tr><td>운영자 콘솔을 <strong>최소 심사 화면</strong>만</td><td class="md">-3.5</td><td>지표 대시보드, 장소 관리 UI</td><td><span class="pill core">권장</span> 초기엔 DB를 직접 봐도 된다</td></tr>
+            <tr><td>후기·신뢰 점수 <strong>2차로</strong></td><td class="md">-2.0</td><td>판매자 판단 근거</td><td><span class="pill core">권장</span> 거래량이 적을 땐 표본이 없어 무의미하다</td></tr>
+            <tr><td>안전거래·문고리 <strong>2차로</strong></td><td class="md">-13.0</td><td>비대면 거래, 사기 방지</td><td><span class="pill risk">주의</span> 직거래만으로 시작. 파일럿 검증엔 충분하다</td></tr>
+            <tr><td>영어 <strong>2차로</strong> (구조만 갖춤)</td><td class="md">-1.5</td><td>외국인 유학생</td><td><span class="pill core">권장</span> i18n 구조는 남기고 리소스만 미룬다</td></tr>
+            <tr><td>오프라인 캐시 제외</td><td class="md">-0.5</td><td>지하철에서 목록 열람</td><td><span class="pill core">권장</span></td></tr>
+            <tr><td>푸시 알림 축소 (새 메시지만)</td><td class="md">-1.0</td><td>가격 인하·약속 알림</td><td><span class="pill later">선택</span></td></tr>
+          </tbody>
+          <tfoot><tr><td>합계</td><td class="md">-21.5</td><td colspan="2">92 → <strong>70.5 MD</strong> · 버퍼 유지 시 약 14주 / 버퍼도 줄이면 12주</td></tr></tfoot>
+        </table>
+      </div>
+
+      <div class="callout stop">
+        <h3>잘라서는 안 되는 것</h3>
+        <ul>
+          <li><strong>2단계 인증</strong> — 이것이 없으면 그냥 중고거래 앱이다. 제품의 존재 이유다</li>
+          <li><strong>신고·차단</strong> — 없으면 스토어 심사에서 반려된다</li>
+          <li><strong>S0 아키텍처 검사와 CI</strong> — 여기를 줄이면 이후 전 구간이 느려진다</li>
+          <li><strong>도메인 테스트</strong> — 규칙이 바뀔 때 무엇이 깨졌는지 알 수 없게 된다</li>
+        </ul>
+      </div>
+
+      <h3>15.1 추천 경로</h3>
+      <p>학기 과제라면 <strong>S0~S5까지 46 MD</strong>를 1차 목표로 잡기를 권한다. 매물을 올리고, 찾고, 대화하고, 가격을 정하는 데까지가 하나의 완결된 제품이다. 안전거래는 그 위에 얹는 기능이므로 나중에 붙여도 구조가 흔들리지 않는다 — <strong>설계서의 포트 구조가 그것을 보장한다.</strong></p>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>공강마켓 구현 계획서 v1.0</span>
+    <span>기준: 설계서 v1.0 · PRD/SRS v1.6 · 프로토타입</span>
+    <span>2026-09-30</span>
+  </footer>
+</div>
+</body>
+</html>
