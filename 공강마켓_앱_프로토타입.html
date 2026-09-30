@@ -568,6 +568,67 @@
     padding:4px 9px;border-radius:999px;
   }
 
+  /* ===== 홈 상단 · 인기 매물 ===== */
+  .hero{padding:10px 16px 12px;background:var(--bg);}
+  .hero .pill{
+    height:44px;border-radius:14px;background:var(--sub);
+    display:flex;align-items:center;gap:10px;padding:0 15px;
+    font-size:14.5px;color:var(--faint);width:100%;text-align:left;
+    border:1px solid var(--line);
+  }
+  .hero .pill:active{background:var(--line);}
+
+  .sechead{
+    display:flex;align-items:baseline;gap:8px;
+    padding:14px 16px 10px;
+  }
+  .sechead h3{font-size:19px;font-weight:700;letter-spacing:-.01em;}
+  .sechead .more{margin-left:auto;font-size:12.5px;color:var(--muted);font-weight:500;}
+
+  .hscroll{
+    display:flex;gap:11px;overflow-x:auto;padding:0 16px 4px;
+    scrollbar-width:none;scroll-snap-type:x proximity;
+  }
+  .hscroll::-webkit-scrollbar{display:none;}
+  .pcard{
+    flex:none;width:132px;display:flex;flex-direction:column;gap:7px;
+    text-align:left;scroll-snap-align:start;
+  }
+  .pcard:active{opacity:.7;}
+  .pimg{
+    width:132px;height:132px;border-radius:14px;position:relative;overflow:hidden;
+    display:grid;place-items:center;font-size:50px;
+    background:linear-gradient(145deg, hsl(var(--h) 72% 92%), hsl(var(--h) 55% 80%));
+  }
+  .rank{
+    position:absolute;top:0;left:9px;
+    background:var(--sky-600);color:#fff;
+    font-size:12px;font-weight:700;letter-spacing:.01em;
+    padding:5px 8px 6px;border-radius:0 0 6px 6px;
+    box-shadow:0 2px 6px rgba(12,40,64,.3);
+  }
+  .rank.top{background:#E0484D;}
+  .phit{
+    position:absolute;top:7px;right:7px;
+    width:30px;height:30px;border-radius:50%;
+    background:rgba(255,255,255,.92);
+    display:grid;place-items:center;font-size:15px;
+    box-shadow:var(--shadow-sm);
+  }
+  .pflag{
+    position:absolute;left:0;bottom:0;right:0;
+    background:linear-gradient(to top, rgba(12,30,44,.72), rgba(12,30,44,0));
+    color:#fff;font-size:11px;font-weight:700;padding:16px 9px 7px;
+  }
+  .pcard .pt{
+    font-size:13.5px;line-height:1.4;font-weight:500;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  .pcard .pp{font-size:14px;font-weight:700;}
+  .pcard .pp.free{color:var(--green);}
+  .pcard .pm{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:3px;}
+  .secdiv{height:8px;background:var(--sub);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+
   /* ===== 안전거래 · 계좌 ===== */
   .way{
     display:flex;gap:11px;align-items:flex-start;
@@ -1004,18 +1065,47 @@
         '<div class="s">필터를 바꾸거나 다른 카테고리를 눌러보세요.</div>' +
         '<button class="act" data-act="resetfilter">필터 초기화</button></div>';
 
+    /* 찜이 많은 순 상위 6개 — 카테고리 필터와 무관하게 전체 기준 */
+    var hot = S.items.filter(function(it){ return it.status !== "done"; })
+      .map(function(it){ return {it:it, n:it.likes + (S.likes[it.id] ? 1 : 0)}; })
+      .sort(function(a,b){ return b.n - a.n; })
+      .slice(0, 6);
+
+    var hotCards = hot.map(function(h, i){
+      var it = h.it, c = cat(it.cat), liked = !!S.likes[it.id];
+      var flag = it.status === "resv" ? "예약중" : (i === 0 ? "가장 인기" : (it.price === 0 ? "나눔" : ""));
+      return '<button class="pcard" data-act="item" data-id="' + it.id + '">' +
+        '<div class="pimg" style="--h:' + c.h + '">' + it.emo +
+          '<span class="rank' + (i < 3 ? " top" : "") + '">#' + (i+1) + "</span>" +
+          '<span class="phit" data-act="hitlike" data-id="' + it.id + '">' + (liked ? "❤️" : "🤍") + "</span>" +
+          (flag ? '<span class="pflag">' + esc(flag) + "</span>" : "") +
+        "</div>" +
+        '<div class="pt">' + esc(it.title) + "</div>" +
+        '<div class="pp' + (it.price===0?" free":"") + '">' + won(it.price) + "</div>" +
+        '<div class="pm">🤍 ' + h.n + " · " + esc(cat(it.cat).name) + "</div>" +
+      "</button>";
+    }).join("");
+
     return '<div class="appbar">' +
         '<div class="title" style="padding-left:12px">한국대</div>' +
-        '<button class="iconbtn" data-act="search" aria-label="검색">🔍</button>' +
         '<button class="iconbtn badge" data-act="noti" aria-label="알림">🔔</button>' +
       "</div>" +
-      '<div class="chips">' + chips + "</div>" +
-      '<div class="toolbar">' +
-        '<button data-act="sort">' + sortName + " ▾</button>" +
-        '<span class="count">' + list.length + "개</span>" +
-        '<button data-act="filter">필터 ' + (fc ? '<span class="fcount">' + fc + "</span>" : "⚙") + "</button>" +
-      "</div>" +
-      '<div class="body">' + banner + body + "</div>";
+      '<div class="body">' +
+        '<div class="hero"><button class="pill" data-act="search">' +
+          "<span>🔍</span><span>물건 이름이나 과목명으로 찾아보세요</span></button></div>" +
+        banner +
+        '<div class="sechead"><h3>지금 인기 있는 물건</h3>' +
+          '<span class="more">찜 많은 순</span></div>' +
+        '<div class="hscroll">' + hotCards + "</div>" +
+        '<div class="sechead" style="padding-bottom:4px"><h3>전체 매물</h3>' +
+          '<span class="more">' + list.length + "개</span></div>" +
+        '<div class="chips" style="border-top:none">' + chips + "</div>" +
+        '<div class="toolbar">' +
+          '<button data-act="sort">' + sortName + " ▾</button>" +
+          '<button data-act="filter">필터 ' + (fc ? '<span class="fcount">' + fc + "</span>" : "⚙") + "</button>" +
+        "</div>" +
+        body +
+      "</div>";
   }
 
   /* ===================== 화면: 검색 ===================== */
@@ -1916,6 +2006,13 @@
         '<button class="opt">🎓 학교 이메일 인증이 완료됐어요<span class="ck" style="color:var(--muted);font-size:11px">어제</span></button>');
     },
 
+    /* 인기 카드의 하트 — 카드 자체를 누른 것으로 새지 않는다 */
+    hitlike: function(el){
+      var id = el.getAttribute("data-id");
+      S.likes[id] = !S.likes[id];
+      render();
+      toast(S.likes[id] ? "찜 목록에 담았어요" : "찜을 취소했어요");
+    },
     like: function(el){
       var id = current().param;
       S.likes[id] = !S.likes[id];
